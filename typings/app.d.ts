@@ -3,7 +3,10 @@
 declare module 'front-lib-electron-base/ElectronUtil' {
 	export class ElectronUtil {
 	    static callMain(func: string, callback: any, ...params: any[]): void;
-	    static callMainSync(func: any, params?: any): any;
+	    static callMainSync(func: string, params?: any): {
+	        result;
+	        error;
+	    };
 	}
 
 }
@@ -63,7 +66,7 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	}
 
 }
-declare module 'front-lib-electron-base/index' {
+declare module 'front-lib-electron-base' {
 	export * from 'front-lib-electron-base/ElectronAppBase';
 	export * from 'front-lib-electron-base/ElectronUtil';
 	export * from 'front-lib-electron-base/ElectronWindowBase';

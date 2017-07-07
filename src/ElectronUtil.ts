@@ -12,6 +12,12 @@ const ERROR_MSG = 'This function is only available on renderer process';
 
 export class ElectronUtil {
 
+	/**
+	 * Calls a function from main process asynchronously
+	 * @param func Function name.
+	 * @param callback A function that accepts (error, result) as arguments.
+	 * @param params List of parameters to send to the function.
+	 */
 	public static callMain(func: string, callback, ...params) {
 		if (!ipcRenderer) {
 			throw ERROR_MSG;
@@ -31,11 +37,16 @@ export class ElectronUtil {
 		});		
 	}
 
-	public static callMainSync(func, params?: any): any {
+	/**
+	 * Calls a function from main process and waits for it to complete.
+	 * @param params List of parameters to send to the function.
+	 * @param params 
+	 */
+	public static callMainSync(func: string, params?: any): { result, error } {
 		if (!ipcRenderer) {
 			throw ERROR_MSG;
 		}
-		return ipcRenderer.sendSync('sync-func-call', {
+		return <any>ipcRenderer.sendSync('sync-func-call', {
 			func: func,
 			params: Array.prototype.slice.call(arguments, 1)
 		});

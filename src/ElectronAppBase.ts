@@ -58,10 +58,16 @@ export abstract class ElectronAppBase {
 	private _logger: winston.LoggerInstance;
 
 
+	/**
+	 * Gets Electron application instance.
+	 */
 	protected get core(): Electron.App {
 		return this._core;
 	}
 
+	/** 
+	 * Gets IPC of main process.
+	*/
 	protected get ipcMain(): Electron.IpcMain {
 		return this._ipcMain;
 	}
@@ -94,6 +100,9 @@ export abstract class ElectronAppBase {
 		return global.webRoot;
 	}
 
+	/**
+	 * Starts application
+	 */
 	public start(): void {
 		this.onStarting();
 
@@ -115,6 +124,9 @@ export abstract class ElectronAppBase {
 		});
 	}
 
+	/**
+	 * Writes logging message.
+	 */
 	public log(level: ElectronAppLogLevel, message: any): Promise<void> {
 		return new Promise<void>((resolve, reject) => {
 			this._logger.log(level, message, (error) => {
@@ -149,6 +161,9 @@ export abstract class ElectronAppBase {
 		});
 	}
 
+	/**
+	 * Stores this window reference and adds neccessary events to manage it.
+	 */
 	public addWindow<T extends ElectronWindowBase>(window: T): T {
 		window.app = this.core;
 		this._windows.set(window.name, window);
