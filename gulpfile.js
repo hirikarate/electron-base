@@ -8,14 +8,12 @@ const
 	merge = require('merge-stream'),
 	mocha = require('gulp-mocha'),
 	remapIstanbul = require('remap-istanbul/lib/gulpRemapIstanbul'),
-	sass = require('gulp-sass'),
 	sequence = require('gulp-watch-sequence'),
 	sourcemaps = require('gulp-sourcemaps'),
 	tsc = require("gulp-typescript"),
 	tsProject = tsc.createProject("tsconfig.json"),
 	tslint = require('gulp-tslint'),
 	uglify = require('gulp-uglify'),
-	uglifycss = require('gulp-uglifycss'),
 	watch = require('gulp-watch')
 	;
 
@@ -171,19 +169,6 @@ gulp.task('definition', ['compile'], (done) => {
 	dts.default(config).then(done);
 });
 
-/**
- * Transpiles SASS files to CSS
- */
-const SASS_FILES = 'assets/css/**/*.scss';
-gulp.task('sass', function () {
-	return gulp.src(SASS_FILES)
-		.pipe(sass().on('error', sass.logError))
-		.pipe(production(uglifycss({
-			'uglyComments': true
-		})))
-		.pipe(gulp.dest('assets/css'));
-});
-
 
 /*
  * Default task which is automatically called by "gulp" command.
@@ -192,7 +177,6 @@ gulp.task('default', [
 	'clean',
 	'tslint',
 	'compile',
-	'sass',
 	'resources',
 	//'test-full'
 	]);
@@ -200,14 +184,13 @@ gulp.task('default', [
 gulp.task('release', [
 	'clean',
 	'compile',
-	'sass',
 	'resources',
 	'definition']);
 
 /*
  * gulp watch
  */
-gulp.task('watch', ['default'] /*['clean', 'tslint', 'compile', 'sass', 'resources']*/, () => {
+gulp.task('watch', ['default'] /*['clean', 'tslint', 'compile', 'resources']*/, () => {
 	let queue = sequence(1000); // 1 sec
 
 	watch(RESRC_FILES, {
@@ -219,11 +202,6 @@ gulp.task('watch', ['default'] /*['clean', 'tslint', 'compile', 'sass', 'resourc
 		name: 'watch-code',
 		emitOnGlob: false
 	}, queue.getHandler('tslint-hot', 'compile-hot'));
-
-	watch(SASS_FILES, {
-		name: 'watch-sass',
-		emitOnGlob: false
-	}, queue.getHandler('sass'));
 });
 
 /*
