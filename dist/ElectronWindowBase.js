@@ -10,6 +10,9 @@ class ElectronWindowBase extends eltr.BrowserWindow {
     get name() {
         return this._name;
     }
+    get app() {
+        return this._app;
+    }
     set app(app) {
         this._app = app;
     }

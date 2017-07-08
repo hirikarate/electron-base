@@ -12,11 +12,11 @@ declare module 'front-lib-electron-base/ElectronUtil' {
 }
 declare module 'front-lib-electron-base/ElectronWindowBase' {
 	import * as eltr from 'electron';
+	import { ElectronAppBase } from 'front-lib-electron-base/ElectronAppBase';
 	export abstract class ElectronWindowBase extends eltr.BrowserWindow {
 	    protected readonly _name: string;
-	    protected _app: Electron.App;
 	    readonly name: string;
-	    app: Electron.App;
+	    app: ElectronAppBase;
 	    constructor(_name: string, options?: Electron.BrowserWindowConstructorOptions);
 	    abstract start(): void;
 	    clearCache(): Promise<void>;
@@ -34,6 +34,10 @@ declare module 'front-lib-electron-base/ElectronWindowBase' {
 
 }
 declare module 'front-lib-electron-base/ElectronAppBase' {
+	/// <reference types="node" />
+	/// <reference types="winston" />
+	import { EventEmitter } from 'events';
+	import * as winston from 'winston';
 	import 'front-lib-electron-base/ElectronUtil';
 	import { ElectronWindowBase } from 'front-lib-electron-base/ElectronWindowBase';
 	export type ElectronAppLogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -45,6 +49,10 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	    quitWhenAllWindowsClosed?: boolean;
 	}
 	export abstract class ElectronAppBase {
+	    protected readonly _windows: Map<string, Electron.BrowserWindow>;
+	    protected readonly _event: EventEmitter;
+	    protected readonly _quitHandlers: ((force: boolean) => Promise<boolean>)[];
+	    protected _logger: winston.LoggerInstance;
 	    protected readonly core: Electron.App;
 	    protected readonly ipcMain: Electron.IpcMain;
 	    constructor(_options?: ElectronAppOptions);

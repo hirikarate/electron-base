@@ -3,17 +3,32 @@ import { EventEmitter } from 'events';
 
 import { Guard } from 'back-lib-common-util';
 
+import { ElectronAppBase } from './ElectronAppBase';
+
 
 export abstract class ElectronWindowBase
 	extends eltr.BrowserWindow {
 
-	protected _app: Electron.App;
+	private _app: ElectronAppBase;
 
+	/**
+	 * Gets this window's name.
+	 */
 	public get name(): string {
 		return this._name;
 	}
 
-	public set app(app: Electron.App) {
+	/**
+	 * Gets parent app of this window.
+	 */
+	public get app(): ElectronAppBase {
+		return this._app;
+	}
+
+	/**
+	 * Sets parent app of this window.
+	 */
+	public set app(app: ElectronAppBase) {
 		this._app = app;
 	}
 

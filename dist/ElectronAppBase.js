@@ -77,7 +77,7 @@ class ElectronAppBase {
         });
     }
     addWindow(window) {
-        window.app = this.core;
+        window.app = this;
         this._windows.set(window.name, window);
         window.onContentLoading(() => this.processEmbededServerUrl(window));
         window.onClosed(() => {

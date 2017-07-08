@@ -48,14 +48,13 @@ export interface ElectronAppOptions {
 
 export abstract class ElectronAppBase {
 
+	protected readonly _windows: Map<string, Electron.BrowserWindow>;
+	protected readonly _event: EventEmitter;
+	protected readonly _quitHandlers: ((force: boolean) => Promise<boolean>)[];
+	protected _logger: winston.LoggerInstance;
+
 	private readonly _core: Electron.App;
 	private readonly _ipcMain: Electron.IpcMain;
-	private readonly _windows: Map<string, Electron.BrowserWindow>;
-
-	private readonly _event: EventEmitter;
-	private readonly _quitHandlers: ((force: boolean) => Promise<boolean>)[];
-	private _isAppReady: boolean;
-	private _logger: winston.LoggerInstance;
 
 
 	/**
@@ -165,7 +164,7 @@ export abstract class ElectronAppBase {
 	 * Stores this window reference and adds neccessary events to manage it.
 	 */
 	public addWindow<T extends ElectronWindowBase>(window: T): T {
-		window.app = this.core;
+		window.app = this;
 		this._windows.set(window.name, window);
 
 		window.onContentLoading(() => this.processEmbededServerUrl(window));
