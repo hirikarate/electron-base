@@ -1,23 +1,58 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const eltr = require("electron");
-const back_lib_common_util_1 = require("back-lib-common-util");
-class ElectronWindowBase extends eltr.BrowserWindow {
+const path = require("path");
+exports.BrowserWindow = (eltr.ipcMain) ? eltr.BrowserWindow : null;
+/**
+ * Use this base class instead of `new BrowserWindow()`.
+ * Note: Always call `super.on...()` when overriding
+ * event methods such as `onContentLoading`, `onClosing` etc.
+ */
+class ElectronWindowBase extends exports.BrowserWindow {
+    /**
+     * @param _name Name of this window
+     */
     constructor(_name, options) {
         super(options);
         this._name = _name;
+        this._triggerGlobalClose = (options.triggerGlobalClose = null || options.triggerGlobalClose === true);
+        this.handleEvents();
     }
+    /**
+     * Gets this window's name.
+     */
     get name() {
         return this._name;
     }
+    /**
+     * Gets parent app of this window.
+     */
+    get app() {
+        return this._app;
+    }
+    /**
+     * Sets parent app of this window.
+     */
     set app(app) {
         this._app = app;
     }
+    /**
+     * Gets option "triggerGlobalClose" value.
+     */
+    get triggerGlobalClose() {
+        return this._triggerGlobalClose;
+    }
+    /**
+     * Clears HTTP cache.
+     */
     clearCache() {
         return new Promise((resolve) => {
-            this.webContents.session.clearCache(() => resolve);
+            this.webContents.session.clearCache(resolve);
         });
     }
+    /**
+     * Clears all types of storage, not including HTTP cache.
+     */
     clearStorage() {
         return new Promise((resolve) => {
             let options = {
@@ -38,44 +73,87 @@ class ElectronWindowBase extends eltr.BrowserWindow {
                 ],
                 origin: '*'
             };
-            this.webContents.session.clearStorageData(options, resolve);
+            eltr.session.defaultSession.clearStorageData(options, resolve);
         });
     }
-    onClosing(handler) {
-        back_lib_common_util_1.Guard.assertDefined('handler', handler);
-        this.on('close', handler);
+    /**
+     * Builds and gets absolute path from specified file path.
+     * @param filePath Relative path to .html file.
+     */
+    getView(filePath) {
+        return path.join(this._app.viewRoot, filePath);
     }
-    onClosed(handler) {
-        back_lib_common_util_1.Guard.assertDefined('handler', handler);
-        this.on('closed', handler);
+    /**
+     * Loads view from specified file path.
+     * @param filePath Relative path to .html file.
+     */
+    loadView(filePath, options) {
+        let resource = 'file://' + this.getView(filePath);
+        this.loadURL(resource);
     }
-    onBlur(handler) {
-        back_lib_common_util_1.Guard.assertDefined('handler', handler);
-        this.on('blur', handler);
+    /**
+     * Occurs when the window is going to be closed.
+     * It’s emitted before the beforeunload and unload event of the DOM.
+     * Calling event.preventDefault() will cancel the close.
+     */
+    onClosing(event) {
     }
-    onFocus(handler) {
-        back_lib_common_util_1.Guard.assertDefined('handler', handler);
-        this.on('focus', handler);
+    /**
+     * Occurs after the window has been closed.
+     * After you have received this event you should remove
+     * the reference to the window and avoid using it any more.
+     */
+    onClosed() {
     }
-    onShowing(handler) {
-        back_lib_common_util_1.Guard.assertDefined('handler', handler);
-        this.on('ready-to-show', handler);
+    /**
+     * Occurs when the window loses focus.
+     */
+    onBlur() {
     }
-    onShown(handler) {
-        back_lib_common_util_1.Guard.assertDefined('handler', handler);
-        this.on('show', handler);
+    /**
+     * Occurs when the window gains focus.
+     */
+    onFocus() {
     }
-    onContentLoading(handler) {
-        back_lib_common_util_1.Guard.assertDefined('handler', handler);
-        this.webContents.on('did-start-loading', handler);
+    /**
+     * Occurs when the web page has been rendered
+     * (while not being shown) and window can be displayed without a visual flash.
+     */
+    onShowing() {
     }
-    onContentLoaded(handler) {
-        back_lib_common_util_1.Guard.assertDefined('handler', handler);
-        this.webContents.on('did-finish-load', handler);
+    /**
+     * Occurs after the window has been shown.
+     */
+    onShown() {
     }
-    onContentDomReady(handler) {
-        back_lib_common_util_1.Guard.assertDefined('handler', handler);
-        this.webContents.on('dom-ready', handler);
+    /**
+     * Occurs when the spinner of the tab started spinning.
+     */
+    onContentLoading() {
+    }
+    /**
+     * Occurs when the navigation is done, i.e. the spinner of the tab has stopped
+     * spinning, and the onload event was dispatched.
+     */
+    onContentLoaded() {
+    }
+    /**
+     * Occurs when the document in the given frame is loaded.
+     */
+    onContentDomReady(event) {
+    }
+    handleEvents() {
+        // Don't pass in a function like this: `this.on('close', this.onClosing.bind(this));`
+        // Because `onClosing` can be overriden by children class.
+        this.on('close', (event) => this.onClosing(event));
+        this.on('closed', () => this.onClosed());
+        this.on('blur', () => this.onBlur());
+        this.on('focus', () => this.onFocus());
+        this.on('ready-to-show', () => this.onShowing());
+        this.on('show', () => this.onShown());
+        this.webContents.on('did-start-loading', () => this.onContentLoading());
+        this.webContents.on('did-finish-load', () => this.onContentLoaded());
+        this.webContents.on('dom-ready', (event) => this.onContentDomReady(event));
     }
 }
 exports.ElectronWindowBase = ElectronWindowBase;

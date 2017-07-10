@@ -9,15 +9,29 @@ import { Guard } from 'back-lib-common-util';
 const tinyCdn = require('tiny-cdn');
 import * as winston from 'winston';
 
-import './ElectronUtil';
 import { ElectronWindowBase } from './ElectronWindowBase';
+
+
+Object.defineProperty(global, 'appRoot', {
+	value: process.cwd(),
+	writable: false // Add read-only property
+});
 
 
 export type ElectronAppLogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export interface ElectronAppOptions {
+
+	/**
+	 * Whether to close all windows when one windows is closed. All windows' closing events are triggered as normal.
+	 * This option is often used with `quitWhenAllWindowsClosed=true`.
+	 * Default is "false".
+	 */
+	globalClose?: boolean;
+
 	/**
 	 * Path to the folder where log files are created.
+	 * Default is "{appRoot}/logs".
 	 */
 	logFilePath?: string;
 
@@ -48,15 +62,23 @@ export interface ElectronAppOptions {
 
 export abstract class ElectronAppBase {
 
+	protected readonly _windows: Map<string, Electron.BrowserWindow>;
+	protected readonly _event: EventEmitter;
+	protected readonly _quitHandlers: ((force: boolean) => Promise<boolean>)[];
+	protected _logger: winston.LoggerInstance;
+	protected _viewRoot: string;
+
 	private readonly _core: Electron.App;
 	private readonly _ipcMain: Electron.IpcMain;
-	private readonly _windows: Map<string, Electron.BrowserWindow>;
+	private _isClosingAll: boolean;
 
-	private readonly _event: EventEmitter;
-	private readonly _quitHandlers: ((force: boolean) => Promise<boolean>)[];
-	private _isAppReady: boolean;
-	private _logger: winston.LoggerInstance;
 
+	/**
+	 * Gets absolute path to folder that contains html files.
+	 */
+	public get viewRoot(): string {
+		return this._viewRoot;
+	}
 
 	/**
 	 * Gets Electron application instance.
@@ -80,8 +102,11 @@ export abstract class ElectronAppBase {
 
 		this._event = new EventEmitter();
 		this._quitHandlers = [];
+		this._isClosingAll = false;
+		this._viewRoot = `${global.appRoot}/views/`;
 
 		let defaultOpts: ElectronAppOptions = {
+			globalClose: false,
 			logFilePath: path.join(global.appRoot, 'logs'),
 			quitWhenAllWindowsClosed: true,
 			serveStaticFiles: true,
@@ -90,15 +115,12 @@ export abstract class ElectronAppBase {
 		};
 		
 		this._options = Object.assign(defaultOpts, this._options);
+		this.initLogger();
+
+		global.app = this;
 	}
 
-	public appRoot(): string {
-		return global.appRoot;
-	}
-
-	public webRoot(): string {
-		return global.webRoot;
-	}
+	public abstract isDebug(): boolean;
 
 	/**
 	 * Starts application
@@ -111,7 +133,7 @@ export abstract class ElectronAppBase {
 		let startPromise = new Promise<void>(resolve => {
 			// Only use this when your VGA is blacklisted by Chrome. Check chrome://gpu to know.
 			this._core.commandLine.appendSwitch('ignore-gpu-blacklist', 'true');
-			this.initLogger();
+			this.startCommunication();
 			resolve();
 		});
 
@@ -165,12 +187,16 @@ export abstract class ElectronAppBase {
 	 * Stores this window reference and adds neccessary events to manage it.
 	 */
 	public addWindow<T extends ElectronWindowBase>(window: T): T {
-		window.app = this.core;
+		window.app = this;
 		this._windows.set(window.name, window);
 
-		window.onContentLoading(() => this.processEmbededServerUrl(window));
-		window.onClosed(() => {
+		window.webContents.on('did-start-loading', () => this.processEmbededServerUrl(window));
+
+		window.on('closed', () => {
 			this._windows.delete(window.name);
+			
+			if (!window.triggerGlobalClose) { return; }
+			this.tryCloseAllWindows();
 		});
 
 		window.start();
@@ -210,7 +236,73 @@ export abstract class ElectronAppBase {
 		this._quitHandlers.push(handler);
 	}
 
+	/**
+	 * Clears HTTP cache.
+	 */
+	public clearCache(): Promise<void> {
+		return new Promise<void>((resolve) => {
+			eltr.session.defaultSession.clearCache(resolve);
+		});
+	}
 
+	/**
+	 * Clears all types of storage, not including HTTP cache.
+	 */
+	public clearStorage(): Promise<void> {
+		return new Promise<void>((resolve) => {
+			let options = {
+				storages: [
+					'appcache',
+					'cookies',
+					'filesystem',
+					'indexdb',
+					'localstorage',
+					'shadercache',
+					'websql',
+					'serviceworkers',
+				],
+				quotas: [
+					'temporary',
+					'persistent',
+					'syncable',
+				],
+				origin: '*'
+			};
+
+			eltr.session.defaultSession.clearStorageData(options, resolve);
+		});
+	}
+
+	/**
+	 * Gets all display screens available on this machine.
+	 */
+	public getAllDisplays(): Electron.Display[] {
+		return eltr.screen.getAllDisplays();
+	}
+
+	
+	/**
+	 * Gets the 2nd display screen (if any) on this machine. 
+	 * If you want to get more displays, use `getAllDisplays`.
+	 * @return A display object, or null if there is only one display available.
+	 */
+	public getSecondDisplay(): Electron.Display {
+		let displays = this.getAllDisplays(),
+			externalDisplay = null;
+
+		for (let i in displays) {
+			if (displays[i].bounds.x != 0 || displays[i].bounds.y != 0) {
+			externalDisplay = displays[i];
+			break;
+			}
+		}
+
+		return externalDisplay;
+	}
+
+	/**
+	 * Executes an OS command.
+	 */
 	protected execCmd(command: string, options?): string {
 		options = options || {};
 
@@ -257,6 +349,18 @@ export abstract class ElectronAppBase {
 	}
 
 
+	private tryCloseAllWindows(): void {
+		if (!this._options.globalClose || this._isClosingAll) { return; }
+
+		// Turn on flag to prevent this method from being called multiple times by other window's 'closed' event.
+		this._isClosingAll = true;
+		
+		this._windows.forEach((win: ElectronWindowBase) => {
+			win.close();
+			this._windows.delete(win.name);
+		});
+	}
+
 	private handleEvents(): void {
 		let app = this._core;
 		
@@ -289,7 +393,9 @@ export abstract class ElectronAppBase {
 
 		this._logger = new winston.Logger({
 			transports: [
-				new (winston.transports.Console)(),
+				new (winston.transports.Console)({
+					level: 'silly'
+				}),
 				new (winston.transports.File)({
 					filename: path.join(logPath, 'error.txt'),
 					level: 'warn'
@@ -315,7 +421,7 @@ export abstract class ElectronAppBase {
 			if (pos >= 0) {
 				url = url.substring(pos + ROOT_PATH.length);
 				// Map from "~/" to "localhost/""
-				redirectURL = `${this.webRoot()}/${url}`;
+				redirectURL = `${global.webRoot}/${url}`;
 			}
 			//*/
 			// this.log('debug', 'Old URL: ' + url);
@@ -365,10 +471,21 @@ export abstract class ElectronAppBase {
 		// }
 		this._ipcMain.on('async-func-call', (event, arg) => {
 			let result = null,
-				error = null;
+				error = null,
+				windowName = arg.target;
 
 			try {
-				result = this[arg.func].apply(this, arg.params);
+				// result = this[arg.func].apply(this, arg.params);
+				if (!windowName) {
+					// Call app class' method
+					result = this[arg.func].apply(this, arg.params);
+				} else if (this._windows.has(windowName)) {
+					// Call method from this specified window
+					let context = this._windows.get(windowName);
+					result = context[arg.func].apply(context, arg.params);
+				} else {
+					throw 'Invalid target';
+				}
 			}
 			catch (ex) {
 				error = ex;
@@ -398,10 +515,20 @@ export abstract class ElectronAppBase {
 
 		this._ipcMain.on('sync-func-call', (event, arg) => {
 			let result = null,
-				error = null;
+				error = null,
+				windowName = arg.target;
 
 			try {
-				result = this[arg.func].apply(this, arg.params);
+				if (!windowName) {
+					// Call app class' method
+					result = this[arg.func].apply(this, arg.params);
+				} else if (this._windows.has(windowName)) {
+					// Call method from this specified window
+					let context = this._windows.get(windowName);
+					result = context[arg.func].apply(context, arg.params);
+				} else {
+					throw 'Invalid target';
+				}
 			}
 			catch (ex) {
 				error = ex;

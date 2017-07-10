@@ -1,20 +1,62 @@
 import * as eltr from 'electron';
 import { EventEmitter } from 'events';
+import * as path from 'path';
 
 import { Guard } from 'back-lib-common-util';
 
+import { ElectronAppBase } from './ElectronAppBase';
 
+export interface BrowserWindowConstructorOptions
+	extends Electron.BrowserWindowConstructorOptions {
+	
+	/**
+	 * Whether to trigger global close action.
+	 * Only takes effect when `ElectronAppOptions.globalClose=true`.
+	 * Default is "false".
+	 */
+	triggerGlobalClose?: boolean;
+}
+
+
+export const BrowserWindow: typeof Electron.BrowserWindow = (eltr.ipcMain) ? eltr.BrowserWindow : null;
+
+/**
+ * Use this base class instead of `new BrowserWindow()`.
+ * Note: Always call `super.on...()` when overriding 
+ * event methods such as `onContentLoading`, `onClosing` etc.
+ */
 export abstract class ElectronWindowBase
-	extends eltr.BrowserWindow {
+	extends BrowserWindow {
 
-	protected _app: Electron.App;
+	private _app: ElectronAppBase;
+	private _triggerGlobalClose: boolean;
 
+	/**
+	 * Gets this window's name.
+	 */
 	public get name(): string {
 		return this._name;
 	}
 
-	public set app(app: Electron.App) {
+	/**
+	 * Gets parent app of this window.
+	 */
+	public get app(): ElectronAppBase {
+		return this._app;
+	}
+
+	/**
+	 * Sets parent app of this window.
+	 */
+	public set app(app: ElectronAppBase) {
 		this._app = app;
+	}
+
+	/**
+	 * Gets option "triggerGlobalClose" value.
+	 */
+	public get triggerGlobalClose(): boolean {
+		return this._triggerGlobalClose;
 	}
 
 	/**
@@ -22,9 +64,12 @@ export abstract class ElectronWindowBase
 	 */
 	constructor(
 		protected readonly _name: string,
-		options?: Electron.BrowserWindowConstructorOptions
+		options?: BrowserWindowConstructorOptions
 	) {
 		super(options);
+		this._triggerGlobalClose = (options.triggerGlobalClose = null || options.triggerGlobalClose === true);
+
+		this.handleEvents();
 	}
 
 	/**
@@ -32,12 +77,18 @@ export abstract class ElectronWindowBase
 	 */
 	public abstract start(): void;
 
+	/**
+	 * Clears HTTP cache.
+	 */
 	public clearCache(): Promise<void> {
 		return new Promise<void>((resolve) => {
-			this.webContents.session.clearCache(() => resolve);
+			this.webContents.session.clearCache(resolve);
 		});
 	}
 
+	/**
+	 * Clears all types of storage, not including HTTP cache.
+	 */
 	public clearStorage(): Promise<void> {
 		return new Promise<void>((resolve) => {
 			let options = {
@@ -59,86 +110,100 @@ export abstract class ElectronWindowBase
 				origin: '*'
 			};
 
-			this.webContents.session.clearStorageData(options, resolve);
+			eltr.session.defaultSession.clearStorageData(options, resolve);
 		});
 	}
 
+	/**
+	 * Builds and gets absolute path from specified file path.
+	 * @param filePath Relative path to .html file.
+	 */
+	protected getView(filePath: string): string {
+		return path.join(this._app.viewRoot, filePath);
+	}
 
 	/**
-	 * Adds a listener to call when the window is going to be closed.
+	 * Loads view from specified file path.
+	 * @param filePath Relative path to .html file.
+	 */
+	protected loadView(filePath: string, options?: Electron.LoadURLOptions): void {
+		let resource = 'file://' + this.getView(filePath);
+		this.loadURL(resource);
+	}
+
+	/**
+	 * Occurs when the window is going to be closed.
 	 * It’s emitted before the beforeunload and unload event of the DOM.
 	 * Calling event.preventDefault() will cancel the close.
 	 */
-	public onClosing(handler: (event: Electron.Event) => void) {
-		Guard.assertDefined('handler', handler);
-		this.on('close', handler);
+	protected onClosing(event: Electron.Event): void {
 	}
 
 	/**
-	 * Adds a listener to call after the window has been closed. 
+	 * Occurs after the window has been closed. 
 	 * After you have received this event you should remove 
 	 * the reference to the window and avoid using it any more.
 	 */
-	public onClosed(handler: Function) {
-		Guard.assertDefined('handler', handler);
-		this.on('closed', handler);
+	protected onClosed(): void {
 	}
 
 	/**
-	 * Adds a listener to call when the window loses focus.
+	 * Occurs when the window loses focus.
 	 */
-	public onBlur(handler: Function) {
-		Guard.assertDefined('handler', handler);
-		this.on('blur', handler);
+	protected onBlur(): void {
 	}
 
 	/**
-	 * Adds a listener to call when the window gains focus.
+	 * Occurs when the window gains focus.
 	 */
-	public onFocus(handler: Function) {
-		Guard.assertDefined('handler', handler);
-		this.on('focus', handler);
+	protected onFocus(): void {
 	}
 
 	/**
-	 * Adds a listener to call when the web page has been rendered 
+	 * Occurs when the web page has been rendered 
 	 * (while not being shown) and window can be displayed without a visual flash.
 	 */
-	public onShowing(handler: Function) {
-		Guard.assertDefined('handler', handler);
-		this.on('ready-to-show', handler);
+	protected onShowing(): void {
 	}
 
 	/**
-	 * Adds a listener to call after the window has been shown.
+	 * Occurs after the window has been shown.
 	 */
-	public onShown(handler: Function) {
-		Guard.assertDefined('handler', handler);
-		this.on('show', handler);
+	protected onShown(): void {
 	}
 
 	/**
-	 * Adds a listener to call when the spinner of the tab started spinning.
+	 * Occurs when the spinner of the tab started spinning.
 	 */
-	public onContentLoading(handler: Function) {
-		Guard.assertDefined('handler', handler);
-		this.webContents.on('did-start-loading', handler);
+	protected onContentLoading(): void {
 	}
 
 	/**
-	 * Adds a listener to call when the navigation is done, i.e. the spinner of the tab has stopped
+	 * Occurs when the navigation is done, i.e. the spinner of the tab has stopped
      * spinning, and the onload event was dispatched.
 	 */
-	public onContentLoaded(handler: Function) {
-		Guard.assertDefined('handler', handler);
-		this.webContents.on('did-finish-load', handler);
+	protected onContentLoaded(): void {
 	}
 
 	/**
-	 * Adds a listener to call when the document in the given frame is loaded.
+	 * Occurs when the document in the given frame is loaded.
 	 */
-	public onContentDomReady(handler: (event: Electron.Event) => void) {
-		Guard.assertDefined('handler', handler);
-		this.webContents.on('dom-ready', handler);
+	protected onContentDomReady(event: Electron.Event) {
+	}
+
+
+	private handleEvents(): void {
+		// Don't pass in a function like this: `this.on('close', this.onClosing.bind(this));`
+		// Because `onClosing` can be overriden by children class.
+
+		this.on('close', (event: Electron.Event) => this.onClosing(event));
+		this.on('closed', () => this.onClosed());
+		this.on('blur', () => this.onBlur());
+		this.on('focus', () => this.onFocus());
+		this.on('ready-to-show', () => this.onShowing());
+		this.on('show', () => this.onShown());
+		this.webContents.on('did-start-loading', () => this.onContentLoading());
+		this.webContents.on('did-finish-load', () => this.onContentLoaded());
+		this.webContents.on('dom-ready', (event: Electron.Event) => this.onContentDomReady(event));
 	}
 }
