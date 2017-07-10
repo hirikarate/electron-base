@@ -1,24 +1,39 @@
-
-// Add read-only property
-Object.defineProperty(global, 'appRoot', {
-	value: process.cwd(),
-	writable: false
-});
-
 import { ipcRenderer } from 'electron';
 
 
 const ERROR_MSG = 'This function is only available on renderer process';
 
+/**
+ * Returns a function that always as `windowName` passed as first param,
+ * other params are the same as `func`.
+ */
+let delegate = function(windowName: string, func: Function): any {
+	return function() {
+		let argsWithoutWinName = Array.prototype.slice.call(arguments, 1),
+			args = [windowName, ...argsWithoutWinName];
+		func.apply(null, args);
+	};
+};
+
 export class ElectronUtil {
 
 	/**
+	 * Assigns functions in this class to `global` variable.
+	 * @param windowName The window name to call functions from.
+	 */
+	public static registerGlobalFunctions(windowName: string) {
+		global['callMain'] = delegate(windowName, ElectronUtil.callMain);
+		global['callMainSync'] = delegate(windowName, ElectronUtil.callMainSync);
+	}
+
+	/**
 	 * Calls a function from main process asynchronously
+	 * @param windowName The window name to call functions from. If null, call function in app class.
 	 * @param func Function name.
 	 * @param callback A function that accepts (error, result) as arguments.
 	 * @param params List of parameters to send to the function.
 	 */
-	public static callMain(func: string, callback, ...params) {
+	public static callMain(windowName: string, func: string, callback, ...params): void {
 		if (!ipcRenderer) {
 			throw ERROR_MSG;
 		}
@@ -32,29 +47,26 @@ export class ElectronUtil {
 		
 		ipcRenderer.send('async-func-call', {
 			func: func,
-			params: Array.prototype.slice.call(arguments, 2),
-			response: responseChannel
+			params: Array.prototype.slice.call(arguments, 3),
+			response: responseChannel,
+			target: windowName
 		});		
 	}
 
 	/**
 	 * Calls a function from main process and waits for it to complete.
+	 * @param windowName The window name to call functions from. If null, call function in app class.
+	 * @param func Function name.
 	 * @param params List of parameters to send to the function.
-	 * @param params 
 	 */
-	public static callMainSync(func: string, params?: any): { result, error } {
+	public static callMainSync(windowName: string, func: string, ...params): { result, error } {
 		if (!ipcRenderer) {
 			throw ERROR_MSG;
 		}
 		return <any>ipcRenderer.sendSync('sync-func-call', {
 			func: func,
-			params: Array.prototype.slice.call(arguments, 1)
+			params: Array.prototype.slice.call(arguments, 2),
+			target: windowName
 		});
 	}
-}
-
-if (ipcRenderer) {
-	// Get application root path from main thread.
-	global['appRoot'] = ElectronUtil.callMainSync('appRoot').result;
-	global['webRoot'] = ElectronUtil.callMainSync('webRoot').result;
 }

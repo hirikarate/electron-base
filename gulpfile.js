@@ -60,7 +60,7 @@ gulp.task('tslint-hot', lintCode);
  * Compiles TypeScript backend sources and writes to `dist` folder.
  */
 const TS_FILES = ['src/**/*.ts', '!node_modules/**/*.*'],
-	TYPING_FILES = ['typings/**/*.d.ts'];
+	TYPING_FILES = ['typings/**/*.d.ts', '!typings/app.d.ts'];
 let compile = function () {
 
 	let onError = function (err) {
