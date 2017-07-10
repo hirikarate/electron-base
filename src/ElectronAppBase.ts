@@ -116,15 +116,11 @@ export abstract class ElectronAppBase {
 		
 		this._options = Object.assign(defaultOpts, this._options);
 		this.initLogger();
+
+		global.app = this;
 	}
 
-	public appRoot(): string {
-		return global.appRoot;
-	}
-
-	public webRoot(): string {
-		return global.webRoot;
-	}
+	public abstract isDebug(): boolean;
 
 	/**
 	 * Starts application
@@ -195,12 +191,6 @@ export abstract class ElectronAppBase {
 		this._windows.set(window.name, window);
 
 		window.webContents.on('did-start-loading', () => this.processEmbededServerUrl(window));
-		
-		// Share custom global variables between main thread and renderer thread
-		window.webContents.executeJavaScript(`
-			global.appRoot='${global.appRoot}';
-			global.webRoot='${global.webRoot}';
-		`);
 
 		window.on('closed', () => {
 			this._windows.delete(window.name);
@@ -256,7 +246,7 @@ export abstract class ElectronAppBase {
 	}
 
 	/**
-	 * Clears all types of storage, including HTTP cache.
+	 * Clears all types of storage, not including HTTP cache.
 	 */
 	public clearStorage(): Promise<void> {
 		return new Promise<void>((resolve) => {
@@ -360,7 +350,7 @@ export abstract class ElectronAppBase {
 
 
 	private tryCloseAllWindows(): void {
-		if (!this._options.globalClose) { return; }
+		if (!this._options.globalClose || this._isClosingAll) { return; }
 
 		// Turn on flag to prevent this method from being called multiple times by other window's 'closed' event.
 		this._isClosingAll = true;
@@ -403,7 +393,9 @@ export abstract class ElectronAppBase {
 
 		this._logger = new winston.Logger({
 			transports: [
-				new (winston.transports.Console)(),
+				new (winston.transports.Console)({
+					level: 'silly'
+				}),
 				new (winston.transports.File)({
 					filename: path.join(logPath, 'error.txt'),
 					level: 'warn'
@@ -429,7 +421,7 @@ export abstract class ElectronAppBase {
 			if (pos >= 0) {
 				url = url.substring(pos + ROOT_PATH.length);
 				// Map from "~/" to "localhost/""
-				redirectURL = `${this.webRoot()}/${url}`;
+				redirectURL = `${global.webRoot}/${url}`;
 			}
 			//*/
 			// this.log('debug', 'Old URL: ' + url);

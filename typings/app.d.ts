@@ -1,34 +1,7 @@
 /// <reference path="./global.d.ts" />
 
-declare module 'front-lib-electron-base/ElectronUtil' {
-	export class ElectronUtil {
-	    /**
-	     * Assigns functions in this class to `global` variable.
-	     * @param windowName The window name to call functions from.
-	     */
-	    static registerGlobalFunctions(windowName: string): void;
-	    /**
-	     * Calls a function from main process asynchronously
-	     * @param windowName The window name to call functions from. If null, call function in app class.
-	     * @param func Function name.
-	     * @param callback A function that accepts (error, result) as arguments.
-	     * @param params List of parameters to send to the function.
-	     */
-	    static callMain(windowName: string, func: string, callback: any, ...params: any[]): void;
-	    /**
-	     * Calls a function from main process and waits for it to complete.
-	     * @param windowName The window name to call functions from. If null, call function in app class.
-	     * @param func Function name.
-	     * @param params List of parameters to send to the function.
-	     */
-	    static callMainSync(windowName: string, func: string, ...params: any[]): {
-	        result;
-	        error;
-	    };
-	}
-
-}
 declare module 'front-lib-electron-base/ElectronWindowBase' {
+	/// <reference types="electron" />
 	import { ElectronAppBase } from 'front-lib-electron-base/ElectronAppBase';
 	export interface BrowserWindowConstructorOptions extends Electron.BrowserWindowConstructorOptions {
 	    /**
@@ -74,7 +47,7 @@ declare module 'front-lib-electron-base/ElectronWindowBase' {
 	     */
 	    clearCache(): Promise<void>;
 	    /**
-	     * Clears all types of storage, including HTTP cache.
+	     * Clears all types of storage, not including HTTP cache.
 	     */
 	    clearStorage(): Promise<void>;
 	    /**
@@ -92,7 +65,7 @@ declare module 'front-lib-electron-base/ElectronWindowBase' {
 	     * It’s emitted before the beforeunload and unload event of the DOM.
 	     * Calling event.preventDefault() will cancel the close.
 	     */
-	    protected onClosing(): void;
+	    protected onClosing(event: Electron.Event): void;
 	    /**
 	     * Occurs after the window has been closed.
 	     * After you have received this event you should remove
@@ -133,11 +106,11 @@ declare module 'front-lib-electron-base/ElectronWindowBase' {
 
 }
 declare module 'front-lib-electron-base/ElectronAppBase' {
+	/// <reference types="electron" />
 	/// <reference types="node" />
 	/// <reference types="winston" />
 	import { EventEmitter } from 'events';
 	import * as winston from 'winston';
-	import 'front-lib-electron-base/ElectronUtil';
 	import { ElectronWindowBase } from 'front-lib-electron-base/ElectronWindowBase';
 	export type ElectronAppLogLevel = 'debug' | 'info' | 'warn' | 'error';
 	export interface ElectronAppOptions {
@@ -192,8 +165,7 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	    */
 	    protected readonly ipcMain: Electron.IpcMain;
 	    constructor(_options?: ElectronAppOptions);
-	    appRoot(): string;
-	    webRoot(): string;
+	    abstract isDebug(): boolean;
 	    /**
 	     * Starts application
 	     */
@@ -233,7 +205,7 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     */
 	    clearCache(): Promise<void>;
 	    /**
-	     * Clears all types of storage, including HTTP cache.
+	     * Clears all types of storage, not including HTTP cache.
 	     */
 	    clearStorage(): Promise<void>;
 	    /**
@@ -273,9 +245,69 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	}
 
 }
+declare module 'front-lib-electron-base/RendererUtil' {
+	import { ElectronAppBase } from 'front-lib-electron-base/ElectronAppBase';
+	import { ElectronWindowBase } from 'front-lib-electron-base/ElectronWindowBase';
+	export const parentWindow: ElectronWindowBase;
+	export const mainApp: ElectronAppBase;
+	export class RendererUtil {
+	    /**
+	     * Copies global vars from main process to renderer process.
+	     */
+	    static shareGlobalVars(): void;
+	    /**
+	     * Calls a method from app class asynchronously, it will run on main process.
+	     * Unlike `callIpc`, this method can send and receive all types of JS objects.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    static callRemoteMain(func: string, ...params: any[]): Promise<any>;
+	    /**
+	     * Calls a method from app class and waits for it to complete, it will run on main process.
+	     * Unlike `callIpcSync`, this method can send and receive all types of JS objects.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    static callRemoteMainSync(func: string, ...params: any[]): any;
+	    /**
+	     * Calls a method from parent window asynchronously, it will run on main process.
+	     * Unlike `callIpc`, this method can send and receive all types of JS objects.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    static callRemoteWindow(func: string, ...params: any[]): Promise<any>;
+	    /**
+	     * Calls a method from parent window and waits for it to complete, it will run on main process.
+	     * Unlike `callIpc`, this method can send and receive all types of JS objects.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    static callRemoteWindowSync(func: string, ...params: any[]): any;
+	    /**
+	     * Calls a function from main process asynchronously with inter-process message.
+	     * Can only send and receive serialziable JSON objects.
+	     * @param windowName The window name to call functions from. If null, call function in app class.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the function.
+	     */
+	    static callIpc(windowName: string, func: string, ...params: any[]): Promise<any>;
+	    /**
+	     * Calls a function from main process and waits for it to complete.
+	     * Can only send and receive serialziable JSON objects.
+	     * @param windowName The window name to call functions from. If null, call function in app class.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the function.
+	     */
+	    static callIpcSync(windowName: string, func: string, ...params: any[]): {
+	        result;
+	        error;
+	    };
+	}
+
+}
 declare module 'front-lib-electron-base' {
 	export * from 'front-lib-electron-base/ElectronAppBase';
-	export * from 'front-lib-electron-base/ElectronUtil';
+	export * from 'front-lib-electron-base/RendererUtil';
 	export * from 'front-lib-electron-base/ElectronWindowBase';
 
 }

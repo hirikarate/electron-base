@@ -1,5 +1,12 @@
+/// <reference types="electron" />
+
 declare namespace NodeJS {
 	export interface Global {
+		/**
+		 * Reference to current instance of `ElectronAppBase`
+		 */
+		app: any;
+
 		/**
 		 * Absolute path to application root.
 		 */

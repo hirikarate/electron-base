@@ -33,6 +33,7 @@ class ElectronAppBase {
         };
         this._options = Object.assign(defaultOpts, this._options);
         this.initLogger();
+        global.app = this;
     }
     /**
      * Gets absolute path to folder that contains html files.
@@ -51,12 +52,6 @@ class ElectronAppBase {
     */
     get ipcMain() {
         return this._ipcMain;
-    }
-    appRoot() {
-        return global.appRoot;
-    }
-    webRoot() {
-        return global.webRoot;
     }
     /**
      * Starts application
@@ -117,11 +112,6 @@ class ElectronAppBase {
         window.app = this;
         this._windows.set(window.name, window);
         window.webContents.on('did-start-loading', () => this.processEmbededServerUrl(window));
-        // Share custom global variables between main thread and renderer thread
-        window.webContents.executeJavaScript(`
-			global.appRoot='${global.appRoot}';
-			global.webRoot='${global.webRoot}';
-		`);
         window.on('closed', () => {
             this._windows.delete(window.name);
             if (!window.triggerGlobalClose) {
@@ -171,7 +161,7 @@ class ElectronAppBase {
         });
     }
     /**
-     * Clears all types of storage, including HTTP cache.
+     * Clears all types of storage, not including HTTP cache.
      */
     clearStorage() {
         return new Promise((resolve) => {
@@ -257,7 +247,7 @@ class ElectronAppBase {
         this.log('error', message);
     }
     tryCloseAllWindows() {
-        if (!this._options.globalClose) {
+        if (!this._options.globalClose || this._isClosingAll) {
             return;
         }
         // Turn on flag to prevent this method from being called multiple times by other window's 'closed' event.
@@ -293,7 +283,9 @@ class ElectronAppBase {
         }
         this._logger = new winston.Logger({
             transports: [
-                new (winston.transports.Console)(),
+                new (winston.transports.Console)({
+                    level: 'silly'
+                }),
                 new (winston.transports.File)({
                     filename: path.join(logPath, 'error.txt'),
                     level: 'warn'
@@ -315,7 +307,7 @@ class ElectronAppBase {
             if (pos >= 0) {
                 url = url.substring(pos + ROOT_PATH.length);
                 // Map from "~/" to "localhost/""
-                redirectURL = `${this.webRoot()}/${url}`;
+                redirectURL = `${global.webRoot}/${url}`;
             }
             //*/
             // this.log('debug', 'Old URL: ' + url);

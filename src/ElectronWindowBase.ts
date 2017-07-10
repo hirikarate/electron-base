@@ -67,7 +67,7 @@ export abstract class ElectronWindowBase
 		options?: BrowserWindowConstructorOptions
 	) {
 		super(options);
-		this._triggerGlobalClose = (options.triggerGlobalClose == null ? true : false);
+		this._triggerGlobalClose = (options.triggerGlobalClose = null || options.triggerGlobalClose === true);
 
 		this.handleEvents();
 	}
@@ -87,7 +87,7 @@ export abstract class ElectronWindowBase
 	}
 
 	/**
-	 * Clears all types of storage, including HTTP cache.
+	 * Clears all types of storage, not including HTTP cache.
 	 */
 	public clearStorage(): Promise<void> {
 		return new Promise<void>((resolve) => {
@@ -136,7 +136,7 @@ export abstract class ElectronWindowBase
 	 * It’s emitted before the beforeunload and unload event of the DOM.
 	 * Calling event.preventDefault() will cancel the close.
 	 */
-	protected onClosing(): void {
+	protected onClosing(event: Electron.Event): void {
 	}
 
 	/**
@@ -176,13 +176,6 @@ export abstract class ElectronWindowBase
 	 * Occurs when the spinner of the tab started spinning.
 	 */
 	protected onContentLoading(): void {
-		this.webContents.executeJavaScript(`
-			if (global) {
-				global.windowName = '${this.name}';
-				global.appRoot = '${global.appRoot}';
-				global.webRoot = '${global.webRoot}';
-			}
-		`);
 	}
 
 	/**
@@ -203,7 +196,7 @@ export abstract class ElectronWindowBase
 		// Don't pass in a function like this: `this.on('close', this.onClosing.bind(this));`
 		// Because `onClosing` can be overriden by children class.
 
-		this.on('close', () => this.onClosing());
+		this.on('close', (event: Electron.Event) => this.onClosing(event));
 		this.on('closed', () => this.onClosed());
 		this.on('blur', () => this.onBlur());
 		this.on('focus', () => this.onFocus());

@@ -4,7 +4,7 @@ function __export(m) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(require("./ElectronAppBase"));
-__export(require("./ElectronUtil"));
+__export(require("./RendererUtil"));
 __export(require("./ElectronWindowBase"));
 
 //# sourceMappingURL=index.js.map
