@@ -9,10 +9,13 @@ const execSyncToBuffer = require("sync-exec");
 const back_lib_common_util_1 = require("back-lib-common-util");
 const tinyCdn = require('tiny-cdn');
 const winston = require("winston");
-Object.defineProperty(global, 'appRoot', {
-    value: process.cwd(),
-    writable: false // Add read-only property
-});
+// If this is main process
+if (eltr.ipcMain) {
+    Object.defineProperty(global, 'appRoot', {
+        value: process.cwd(),
+        writable: false // Add read-only property
+    });
+}
 class ElectronAppBase {
     constructor(_options = {}) {
         this._options = _options;

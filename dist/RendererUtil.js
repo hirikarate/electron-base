@@ -8,6 +8,15 @@ exports.parentWindow = (electron_1.ipcRenderer != null
 exports.mainApp = (electron_1.ipcRenderer != null
     ? electron_1.remote.getGlobal('app')
     : null);
+let addGlobal = function (name, value) {
+    if (global[name] !== undefined) {
+        return;
+    }
+    Object.defineProperty(global, name, {
+        value: value,
+        writable: false // Add read-only property
+    });
+};
 class RendererUtil {
     /**
      * Copies global vars from main process to renderer process.
@@ -16,9 +25,9 @@ class RendererUtil {
         if (!electron_1.ipcRenderer) {
             throw NOT_AVAIL_ERROR;
         }
-        global.appRoot = electron_1.remote.getGlobal('appRoot');
-        global.webRoot = electron_1.remote.getGlobal('webRoot');
-        global.windowName = exports.parentWindow.name;
+        addGlobal('appRoot', electron_1.remote.getGlobal('appRoot'));
+        addGlobal('webRoot', electron_1.remote.getGlobal('webRoot'));
+        addGlobal('windowName', exports.parentWindow.name);
     }
     /**
      * Calls a method from app class asynchronously, it will run on main process.

@@ -15,6 +15,16 @@ export const mainApp = (ipcRenderer != null
 	? <ElectronAppBase>remote.getGlobal('app') 
 	: null);
 
+
+let addGlobal = function (name, value) {
+	if (global[name] !== undefined) { return; }
+
+	Object.defineProperty(global, name, {
+		value: value,
+		writable: false // Add read-only property
+	});
+};
+
 export class RendererUtil {
 
 	/**
@@ -24,9 +34,9 @@ export class RendererUtil {
 		if (!ipcRenderer) {
 			throw NOT_AVAIL_ERROR;
 		}
-		global.appRoot = remote.getGlobal('appRoot');
-		global.webRoot = remote.getGlobal('webRoot');
-		global.windowName = parentWindow.name;
+		addGlobal('appRoot', remote.getGlobal('appRoot'));
+		addGlobal('webRoot', remote.getGlobal('webRoot'));
+		addGlobal('windowName', parentWindow.name);
 	}
 
 	/**

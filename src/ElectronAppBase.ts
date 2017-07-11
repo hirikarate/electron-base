@@ -12,10 +12,13 @@ import * as winston from 'winston';
 import { ElectronWindowBase } from './ElectronWindowBase';
 
 
-Object.defineProperty(global, 'appRoot', {
-	value: process.cwd(),
-	writable: false // Add read-only property
-});
+// If this is main process
+if (eltr.ipcMain) {
+	Object.defineProperty(global, 'appRoot', {
+		value: process.cwd(),
+		writable: false // Add read-only property
+	});
+}
 
 
 export type ElectronAppLogLevel = 'debug' | 'info' | 'warn' | 'error';
