@@ -6,19 +6,24 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const execSyncToBuffer = require("sync-exec");
-const back_lib_common_util_1 = require("back-lib-common-util");
 const tinyCdn = require('tiny-cdn');
 const winston = require("winston");
-// If this is main process
-if (eltr.ipcMain) {
-    Object.defineProperty(global, 'appRoot', {
-        value: process.cwd(),
-        writable: false // Add read-only property
-    });
-}
+var AppStatus;
+(function (AppStatus) {
+    AppStatus[AppStatus["NotReady"] = 0] = "NotReady";
+    AppStatus[AppStatus["Ready"] = 1] = "Ready";
+    AppStatus[AppStatus["Started"] = 2] = "Started";
+})(AppStatus || (AppStatus = {}));
 class ElectronAppBase {
-    constructor(_options = {}) {
+    constructor(appRoot, _options = {}) {
         this._options = _options;
+        // If this is main process
+        if (eltr.ipcMain) {
+            Object.defineProperty(global, 'appRoot', {
+                value: appRoot,
+                writable: false // Add read-only property
+            });
+        }
         this._core = eltr.app;
         this._ipcMain = eltr.ipcMain;
         this._windows = new Map();
@@ -26,9 +31,10 @@ class ElectronAppBase {
         this._quitHandlers = [];
         this._isClosingAll = false;
         this._viewRoot = `${global.appRoot}/views/`;
+        this._status = AppStatus.NotReady;
         let defaultOpts = {
             globalClose: false,
-            logFilePath: path.join(global.appRoot, 'logs'),
+            logFilePath: path.join(process.cwd(), 'logs'),
             quitWhenAllWindowsClosed: true,
             serveStaticFiles: true,
             staticFileDomain: 'localhost',
@@ -71,9 +77,19 @@ class ElectronAppBase {
         if (this._options.serveStaticFiles) {
             startPromise = startPromise.then(() => this.serveStaticFiles());
         }
-        this._event.once('app-ready', () => {
-            startPromise.then(() => this.onStarted());
-        });
+        startPromise = startPromise.catch(err => this.onError(err));
+        let onAppReady = () => {
+            startPromise.then(() => {
+                this._status = AppStatus.Started;
+                this.onStarted();
+                startPromise = null;
+                this._event = null;
+            });
+        };
+        this._event.once('app-ready', onAppReady);
+        if (this._status == AppStatus.Ready) {
+            onAppReady.apply(this);
+        }
     }
     /**
      * Writes logging message.
@@ -152,7 +168,9 @@ class ElectronAppBase {
      * @param handler If this handler resolves to falsey value, it cancels quit process.
      */
     addQuitListener(handler) {
-        back_lib_common_util_1.Guard.assertDefined('handler', handler);
+        if (!handler || !(typeof handler == 'function')) {
+            throw 'Handler is not a function!';
+        }
         this._quitHandlers.push(handler);
     }
     /**
@@ -211,6 +229,12 @@ class ElectronAppBase {
         return externalDisplay;
     }
     /**
+     * Adds a listener to call when an error occurs.
+     */
+    onError(message) {
+        this.log('error', message);
+    }
+    /**
      * Executes an OS command.
      */
     execCmd(command, options) {
@@ -243,12 +267,6 @@ class ElectronAppBase {
      */
     onStarted() {
     }
-    /**
-     * Adds a listener to call when an error occurs.
-     */
-    onError(message) {
-        this.log('error', message);
-    }
     tryCloseAllWindows() {
         if (!this._options.globalClose || this._isClosingAll) {
             return;
@@ -266,6 +284,7 @@ class ElectronAppBase {
         // initialization and is ready to create browser windows.
         // Some APIs can only be used after this event occurs.
         app.on('ready', () => {
+            this._status = AppStatus.Ready;
             this._event.emit('app-ready');
         });
         // Quit when all windows are closed.
@@ -319,14 +338,14 @@ class ElectronAppBase {
         });
     }
     serveStaticFiles() {
-        const CACHE_PATH = `${global.appRoot}/assets/tiny-cdn-cache`;
+        const CACHE_PATH = `${process.cwd()}/assets/tiny-cdn-cache`;
         let domain = this._options.staticFileDomain || 'localhost', port = this._options.staticFilePort || 30000;
         if (!fs.existsSync(CACHE_PATH)) {
             fs.mkdirSync(CACHE_PATH);
         }
         return new Promise(resolve => {
             http.createServer(tinyCdn.create({
-                source: global.appRoot,
+                source: process.cwd(),
                 dest: CACHE_PATH,
             }))
                 .listen(port, () => {
@@ -337,10 +356,10 @@ class ElectronAppBase {
                 });
                 resolve();
             })
-                .on('error', (err) => this._event.emit('error', err));
+                .on('error', (err) => this.onError(err));
         })
             .catch(err => {
-            this._event.emit('error', err);
+            this.onError(err);
             process.exit();
         });
     }

@@ -4,8 +4,7 @@
   "main": "./dist/index.js",
   "types": "./typings/app.d.ts",
   "dependencies": {
-    "back-lib-common-util": "git+ssh://git@bitbucket.org/firstinteractive/back-lib-common-util.git#development",
-    "electron": "^1.6.11",
+    "electron": "~1.6.11",
     "node-pre-gyp": "~0.6.31",
     "remap-istanbul": "^0.9.5",
     "sync-exec": "^0.6.2",

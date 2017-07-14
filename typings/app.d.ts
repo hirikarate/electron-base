@@ -107,9 +107,7 @@ declare module 'front-lib-electron-base/ElectronWindowBase' {
 }
 declare module 'front-lib-electron-base/ElectronAppBase' {
 	/// <reference types="electron" />
-	/// <reference types="node" />
 	/// <reference types="winston" />
-	import { EventEmitter } from 'events';
 	import * as winston from 'winston';
 	import { ElectronWindowBase } from 'front-lib-electron-base/ElectronWindowBase';
 	export type ElectronAppLogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -148,7 +146,6 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	}
 	export abstract class ElectronAppBase {
 	    protected readonly _windows: Map<string, Electron.BrowserWindow>;
-	    protected readonly _event: EventEmitter;
 	    protected readonly _quitHandlers: ((force: boolean) => Promise<boolean>)[];
 	    protected _logger: winston.LoggerInstance;
 	    protected _viewRoot: string;
@@ -164,7 +161,7 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     * Gets IPC of main process.
 	    */
 	    protected readonly ipcMain: Electron.IpcMain;
-	    constructor(_options?: ElectronAppOptions);
+	    constructor(appRoot: string, _options?: ElectronAppOptions);
 	    abstract isDebug(): boolean;
 	    /**
 	     * Starts application
@@ -219,6 +216,10 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     */
 	    getSecondDisplay(): Electron.Display;
 	    /**
+	     * Adds a listener to call when an error occurs.
+	     */
+	    onError(message: any): void;
+	    /**
 	     * Executes an OS command.
 	     */
 	    protected execCmd(command: string, options?: any): string;
@@ -238,10 +239,6 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     * Occurs after application has created all windows.
 	     */
 	    protected onStarted(): void;
-	    /**
-	     * Adds a listener to call when an error occurs.
-	     */
-	    protected onError(message: string): void;
 	}
 
 }

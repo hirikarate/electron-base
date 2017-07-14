@@ -1,10 +1,8 @@
 import * as eltr from 'electron';
-import { EventEmitter } from 'events';
 import * as path from 'path';
 
-import { Guard } from 'back-lib-common-util';
-
 import { ElectronAppBase } from './ElectronAppBase';
+
 
 export interface BrowserWindowConstructorOptions
 	extends Electron.BrowserWindowConstructorOptions {
