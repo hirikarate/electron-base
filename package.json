@@ -1,6 +1,7 @@
 {
   "name": "front-lib-electron-base",
-  "version": "0.1.0",
+  "description": "Provides abstract base app class and window class for other Electron app to inherit.",
+  "version": "0.1.1",
   "main": "./dist/index.js",
   "types": "./typings/app.d.ts",
   "dependencies": {
