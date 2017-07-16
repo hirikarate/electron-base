@@ -11,15 +11,14 @@ declare module 'front-lib-electron-base/ElectronWindowBase' {
 	     */
 	    triggerGlobalClose?: boolean;
 	}
-	export const BrowserWindow: typeof Electron.BrowserWindow;
 	/**
 	 * Use this base class instead of `new BrowserWindow()`.
 	 * Note: Always call `super.on...()` when overriding
 	 * event methods such as `onContentLoading`, `onClosing` etc.
 	 */
-	export abstract class ElectronWindowBase extends BrowserWindow {
+	export abstract class ElectronWindowBase {
 	    protected readonly _name: string;
-	    /**
+	    	    	    	    	    /**
 	     * Gets this window's name.
 	     */
 	    readonly name: string;
@@ -31,13 +30,22 @@ declare module 'front-lib-electron-base/ElectronWindowBase' {
 	     */
 	    app: ElectronAppBase;
 	    /**
+	     * Gets Electron native browser window.
+	     * This is a workaround until this issue is fixed: https://github.com/electron/electron/issues/10019
+	     */
+	    readonly native: Electron.BrowserWindow;
+	    /**
 	     * Gets option "triggerGlobalClose" value.
 	     */
 	    readonly triggerGlobalClose: boolean;
 	    /**
+	     * Gets Electron native web contents.
+	     */
+	    readonly webContents: Electron.WebContents;
+	    /**
 	     * @param _name Name of this window
 	     */
-	    constructor(_name: string, options?: BrowserWindowConstructorOptions);
+	    constructor(_name: string, _options?: BrowserWindowConstructorOptions);
 	    /**
 	     * Do not call this method explicitly. It should be called in ElectronAppBase.addWindow
 	     */
@@ -50,6 +58,74 @@ declare module 'front-lib-electron-base/ElectronWindowBase' {
 	     * Clears all types of storage, not including HTTP cache.
 	     */
 	    clearStorage(): Promise<void>;
+	    /**
+	     * Try to close the window. This has the same effect as a user manually clicking
+	     * the close button of the window. The web page may cancel the close though. See
+	     * the close event.
+	     */
+	    close(): void;
+	    /**
+	     * Forces closing the window, the unload and beforeunload event won't be emitted for
+	     * the web page, and close event will also not be emitted for this window, but it
+	     * guarantees the closed event will be emitted.
+	     */
+	    destroy(): void;
+	    /**
+	     * Focuses on the window.
+	     */
+	    focus(): void;
+	    isFocused(): boolean;
+	    isFullScreen(): boolean;
+	    isKiosk(): boolean;
+	    isModal(): boolean;
+	    /**
+	     * Maximizes the window. This will also show (but not focus) the window if it isn't
+	     * being displayed already.
+	     */
+	    maximize(): void;
+	    /**
+	     * Minimizes the window. On some platforms the minimized window will be shown in
+	     * the Dock.
+	     */
+	    minimize(): void;
+	    /**
+	     * Reloads the current web page.
+	     */
+	    reload(): void;
+	    /**
+	     * Restores the window from minimized state to its previous state.
+	     */
+	    restore(): void;
+	    /**
+	     * Enters or leaves the kiosk mode.
+	     */
+	    setKiosk(flag: boolean): void;
+	    showConfirmBox(title: string, content: string, detail?: string): Promise<boolean>;
+	    /**
+	     * Displays a modal dialog that shows an error message. This API can be called
+	     * safely before the ready event the app module emits, it is usually used to report
+	     * errors in early stage of startup.  If called before the app readyevent on Linux,
+	     * the message will be emitted to stderr, and no GUI dialog will appear.
+	     */
+	    showErrorBox(title: string, content: string): void;
+	    /**
+	     * Shows a dialog to select folders.
+	     * @return A promise to resolve to an array of selected paths (if )
+	     */
+	    showOpenDialog(options?: Electron.OpenDialogOptions): Promise<string[]>;
+	    showSaveDialog(options?: Electron.SaveDialogOptions): Promise<string>;
+	    showMessageBox(options?: Electron.MessageBoxOptions): Promise<{
+	        response: number;
+	        checkboxChecked: boolean;
+	    }>;
+	    /**
+	     * Unmaximizes the window.
+	     */
+	    unmaximize(): void;
+	    /**
+	     * Sets whether the window should be in fullscreen mode.
+	     */
+	    setFullScreen(flag: boolean): void;
 	    /**
 	     * Builds and gets absolute path from specified file path.
 	     * @param filePath Relative path to .html file.
@@ -102,14 +178,52 @@ declare module 'front-lib-electron-base/ElectronWindowBase' {
 	     * Occurs when the document in the given frame is loaded.
 	     */
 	    protected onContentDomReady(event: Electron.Event): void;
+	    	}
+
+}
+declare module 'front-lib-electron-base/MainLogger' {
+	import 'winston-daily-rotate-file';
+	export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+	export interface LoggerOptions {
+	    /**
+	     * Path to directory in which debug file is created.
+	     * Default is: {appRoot}/logs/debug.log
+	     */
+	    debugDirPath?: string;
+	    /**
+	     * Path to directory in which error file is created.
+	     * Default is: {appRoot}/logs/error.log
+	     */
+	    errorDirPath?: string;
 	}
+	/**
+	 * Logger for main process, writes logs to system console and files.
+	 */
+	export class MainLogger {
+	    	    	    	    	    constructor(_options?: LoggerOptions);
+	    /**
+	     * Writes message to console.
+	     */
+	    info(message: any): Promise<void>;
+	    /**
+	     * Writes message to console and debug file.
+	     */
+	    debug(message: any): Promise<void>;
+	    /**
+	     * Writes message to console and error file.
+	     */
+	    warn(message: any): Promise<void>;
+	    /**
+	     * Writes message to console and error file.
+	     */
+	    error(message: any): Promise<void>;
+	    	    	    	    	    	}
 
 }
 declare module 'front-lib-electron-base/ElectronAppBase' {
 	/// <reference types="electron" />
-	/// <reference types="winston" />
-	import * as winston from 'winston';
 	import { ElectronWindowBase } from 'front-lib-electron-base/ElectronWindowBase';
+	import { MainLogger } from 'front-lib-electron-base/MainLogger';
 	export type ElectronAppLogLevel = 'debug' | 'info' | 'warn' | 'error';
 	export interface ElectronAppOptions {
 	    /**
@@ -122,7 +236,7 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     * Path to the folder where log files are created.
 	     * Default is "{appRoot}/logs".
 	     */
-	    logFilePath?: string;
+	    logDirPath?: string;
 	    /**
 	     * Whether to server static files (css, jpg,...) via a embeded server.
 	     * Default is "true".
@@ -145,10 +259,13 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	    quitWhenAllWindowsClosed?: boolean;
 	}
 	export abstract class ElectronAppBase {
-	    protected readonly _windows: Map<string, Electron.BrowserWindow>;
+	    	    protected readonly _windows: Map<string, ElectronWindowBase>;
 	    protected readonly _quitHandlers: ((force: boolean) => Promise<boolean>)[];
-	    protected _logger: winston.LoggerInstance;
 	    protected _viewRoot: string;
+	    	    	    	    	    	    	    /**
+	     * Gets logger.
+	     */
+	    readonly logger: MainLogger;
 	    /**
 	     * Gets absolute path to folder that contains html files.
 	     */
@@ -157,6 +274,10 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     * Gets Electron application instance.
 	     */
 	    protected readonly core: Electron.App;
+	    /**
+	     * Gets Electron dialog instance.
+	     */
+	    protected readonly dialog: Electron.Dialog;
 	    /**
 	     * Gets IPC of main process.
 	    */
@@ -168,10 +289,6 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     */
 	    start(): void;
 	    /**
-	     * Writes logging message.
-	     */
-	    log(level: ElectronAppLogLevel, message: any): Promise<void>;
-	    /**
 	     * Attempts to quit this application, however one of the quit handlers can
 	     * prevent this process if `force` is false.
 	     * @param force Quit the app regardless somebody wants to prevent.
@@ -182,6 +299,7 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     * Stores this window reference and adds neccessary events to manage it.
 	     */
 	    addWindow<T extends ElectronWindowBase>(window: T): T;
+	    findWindow(name: string): ElectronWindowBase;
 	    /**
 	     * Reloads window with specified `name`, or reloads all if no name is given.
 	     * @param name If specified, reload window with this name.
@@ -220,6 +338,13 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     */
 	    onError(message: any): void;
 	    /**
+	     * Displays a modal dialog that shows an error message. This API can be called
+	     * safely before the ready event the app module emits, it is usually used to report
+	     * errors in early stage of startup.  If called before the app readyevent on Linux,
+	     * the message will be emitted to stderr, and no GUI dialog will appear.
+	     */
+	    showErrorBox(title: string, content: string): void;
+	    /**
 	     * Executes an OS command.
 	     */
 	    protected execCmd(command: string, options?: any): string;
@@ -239,72 +364,118 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     * Occurs after application has created all windows.
 	     */
 	    protected onStarted(): void;
+	    	    	    	    	    	    	    	}
+
+}
+declare module 'front-lib-electron-base/RendererLogger' {
+	import { MainLogger } from 'front-lib-electron-base/MainLogger';
+	/**
+	 * Logger for renderer process, writes debug logs to browser console,
+	 * and delegates error logs to main logger to write to files.
+	 */
+	export class RendererLogger {
+	    	    constructor(_mainLogger: MainLogger);
+	    /**
+	     * Writes info message to browser console.
+	     * @param message A string, support %s (string), %i (number).
+	     * @param optionalParams Params to take place of %s and %i in `message`.
+	     */
+	    info(message?: any, ...optionalParams: any[]): void;
+	    /**
+	     * Writes debug message to browser console.
+	     * @param message A string, support %s (string), %i (number).
+	     * @param optionalParams Params to take place of %s and %i in `message`.
+	     */
+	    debug(message?: any, ...optionalParams: any[]): void;
+	    /**
+	     * Writes warn message to browser console.
+	     * @param message A string, support %s (string), %i (number).
+	     * @param optionalParams Params to take place of %s and %i in `message`.
+	     */
+	    warn(message?: any, ...optionalParams: any[]): void;
+	    /**
+	     * Writes error message to browser console AND sends to main process to dumb to file.
+	     * @param message A string, support %s (string), %i (number).
+	     * @param optionalParams Params to take place of %s and %i in `message`.
+	     */
+	    error(message?: any, ...optionalParams: any[]): void;
 	}
 
 }
 declare module 'front-lib-electron-base/RendererUtil' {
 	import { ElectronAppBase } from 'front-lib-electron-base/ElectronAppBase';
 	import { ElectronWindowBase } from 'front-lib-electron-base/ElectronWindowBase';
-	export const parentWindow: ElectronWindowBase;
-	export const mainApp: ElectronAppBase;
+	import { RendererLogger } from 'front-lib-electron-base/RendererLogger';
 	export class RendererUtil {
+	    	    	    constructor();
+	    readonly logger: RendererLogger;
 	    /**
-	     * Copies global vars from main process to renderer process.
+	     * Gets instance of main app class.
 	     */
-	    static shareGlobalVars(): void;
+	    readonly mainApp: ElectronAppBase;
+	    /**
+	     * Gets instance of parent window of this renderer process.
+	     */
+	    readonly parentWindow: ElectronWindowBase;
 	    /**
 	     * Calls a method from app class asynchronously, it will run on main process.
 	     * Unlike `callIpc`, this method can send and receive all types of JS objects.
 	     * @param func Function name.
 	     * @param params List of parameters to send to the remote method.
 	     */
-	    static callRemoteMain(func: string, ...params: any[]): Promise<any>;
+	    callRemoteMain(func: string, ...params: any[]): Promise<any>;
 	    /**
 	     * Calls a method from app class and waits for it to complete, it will run on main process.
 	     * Unlike `callIpcSync`, this method can send and receive all types of JS objects.
 	     * @param func Function name.
 	     * @param params List of parameters to send to the remote method.
 	     */
-	    static callRemoteMainSync(func: string, ...params: any[]): any;
+	    callRemoteMainSync(func: string, ...params: any[]): any;
 	    /**
 	     * Calls a method from parent window asynchronously, it will run on main process.
 	     * Unlike `callIpc`, this method can send and receive all types of JS objects.
 	     * @param func Function name.
 	     * @param params List of parameters to send to the remote method.
 	     */
-	    static callRemoteWindow(func: string, ...params: any[]): Promise<any>;
+	    callRemoteWindow(func: string, ...params: any[]): Promise<any>;
 	    /**
 	     * Calls a method from parent window and waits for it to complete, it will run on main process.
 	     * Unlike `callIpc`, this method can send and receive all types of JS objects.
 	     * @param func Function name.
 	     * @param params List of parameters to send to the remote method.
 	     */
-	    static callRemoteWindowSync(func: string, ...params: any[]): any;
+	    callRemoteWindowSync(func: string, ...params: any[]): any;
 	    /**
+	     * @deprecated
 	     * Calls a function from main process asynchronously with inter-process message.
 	     * Can only send and receive serialziable JSON objects.
 	     * @param windowName The window name to call functions from. If null, call function in app class.
 	     * @param func Function name.
 	     * @param params List of parameters to send to the function.
 	     */
-	    static callIpc(windowName: string, func: string, ...params: any[]): Promise<any>;
+	    callIpc(windowName: string, func: string, ...params: any[]): Promise<any>;
 	    /**
+	     * @deprecated
 	     * Calls a function from main process and waits for it to complete.
 	     * Can only send and receive serialziable JSON objects.
 	     * @param windowName The window name to call functions from. If null, call function in app class.
 	     * @param func Function name.
 	     * @param params List of parameters to send to the function.
 	     */
-	    static callIpcSync(windowName: string, func: string, ...params: any[]): {
+	    callIpcSync(windowName: string, func: string, ...params: any[]): {
 	        result;
 	        error;
 	    };
-	}
+	    	    /**
+	     * Copies global vars from main process to renderer process.
+	     */
+	    	}
+	export const rendererUtil: RendererUtil;
 
 }
 declare module 'front-lib-electron-base' {
 	export * from 'front-lib-electron-base/ElectronAppBase';
-	export * from 'front-lib-electron-base/RendererUtil';
+	export { rendererUtil } from 'front-lib-electron-base/RendererUtil';
 	export * from 'front-lib-electron-base/ElectronWindowBase';
 
 }

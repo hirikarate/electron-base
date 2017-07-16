@@ -1,3 +1,3 @@
 export * from './ElectronAppBase';
-export * from './RendererUtil';
+export { rendererUtil } from './RendererUtil';
 export * from './ElectronWindowBase';

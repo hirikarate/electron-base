@@ -6,9 +6,9 @@ import * as path from 'path';
 
 import * as execSyncToBuffer from 'sync-exec';
 const tinyCdn = require('tiny-cdn');
-import * as winston from 'winston';
 
 import { ElectronWindowBase } from './ElectronWindowBase';
+import { MainLogger } from './MainLogger';
 
 
 export type ElectronAppLogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -26,7 +26,7 @@ export interface ElectronAppOptions {
 	 * Path to the folder where log files are created.
 	 * Default is "{appRoot}/logs".
 	 */
-	logFilePath?: string;
+	logDirPath?: string;
 
 	/**
 	 * Whether to server static files (css, jpg,...) via a embeded server.
@@ -57,17 +57,24 @@ enum AppStatus { NotReady, Ready, Started }
 
 export abstract class ElectronAppBase {
 
-	protected readonly _windows: Map<string, Electron.BrowserWindow>;
+	protected readonly _windows: Map<string, ElectronWindowBase>;
 	protected readonly _quitHandlers: ((force: boolean) => Promise<boolean>)[];
-	protected _logger: winston.LoggerInstance;
 	protected _viewRoot: string;
 
 	private readonly _core: Electron.App;
 	private readonly _ipcMain: Electron.IpcMain;
+	private readonly _logger: MainLogger;
 	private _event: EventEmitter;
 	private _isClosingAll: boolean;
 	private _status: AppStatus;
 
+
+	/**
+	 * Gets logger.
+	 */
+	public get logger(): MainLogger {
+		return this._logger;
+	}
 
 	/**
 	 * Gets absolute path to folder that contains html files.
@@ -76,11 +83,19 @@ export abstract class ElectronAppBase {
 		return this._viewRoot;
 	}
 
+
 	/**
 	 * Gets Electron application instance.
 	 */
 	protected get core(): Electron.App {
 		return this._core;
+	}
+
+	/**
+	 * Gets Electron dialog instance.
+	 */
+	protected get dialog(): Electron.Dialog {
+		return eltr.dialog;
 	}
 
 	/** 
@@ -101,9 +116,12 @@ export abstract class ElectronAppBase {
 			});
 		}
 
+		this.initOptions(_options);
+
 		this._core = eltr.app;
 		this._ipcMain = eltr.ipcMain;
-		this._windows = new Map<string, Electron.BrowserWindow>();
+		this._windows = new Map<string, ElectronWindowBase>();
+		this._logger = this.createLogger();
 
 		this._event = new EventEmitter();
 		this._quitHandlers = [];
@@ -111,20 +129,9 @@ export abstract class ElectronAppBase {
 		this._viewRoot = `${global.appRoot}/views/`;
 		this._status = AppStatus.NotReady;
 
-		let defaultOpts: ElectronAppOptions = {
-			globalClose: false,
-			logFilePath: path.join(process.cwd(), 'logs'),
-			quitWhenAllWindowsClosed: true,
-			serveStaticFiles: true,
-			staticFileDomain: 'localhost',
-			staticFilePort: 30000
-		};
-		
-		this._options = Object.assign(defaultOpts, this._options);
-		this.initLogger();
-
 		global.app = this;
 	}
+
 
 	public abstract isDebug(): boolean;
 
@@ -166,21 +173,6 @@ export abstract class ElectronAppBase {
 	}
 
 	/**
-	 * Writes logging message.
-	 */
-	public log(level: ElectronAppLogLevel, message: any): Promise<void> {
-		return new Promise<void>((resolve, reject) => {
-			this._logger.log(level, message, (error) => {
-				if (error) {
-					reject(error);
-					return;
-				}
-				resolve();
-			});
-		});
-	}
-
-	/**
 	 * Attempts to quit this application, however one of the quit handlers can
 	 * prevent this process if `force` is false.
 	 * @param force Quit the app regardless somebody wants to prevent.
@@ -209,9 +201,11 @@ export abstract class ElectronAppBase {
 		window.app = this;
 		this._windows.set(window.name, window);
 
-		window.webContents.on('did-start-loading', () => this.processEmbededServerUrl(window));
+		let native = window.native;
+		native['name'] = window.name;
+		native.webContents.on('did-start-loading', () => this.processEmbededServerUrl(native));
 
-		window.on('closed', () => {
+		native.on('closed', () => {
 			this._windows.delete(window.name);
 			
 			if (!window.triggerGlobalClose) { return; }
@@ -220,6 +214,10 @@ export abstract class ElectronAppBase {
 
 		window.start();
 		return window;
+	}
+
+	public findWindow(name: string): ElectronWindowBase {
+		return this._windows.get(name);
 	}
 
 	/**
@@ -325,7 +323,17 @@ export abstract class ElectronAppBase {
 	 * Adds a listener to call when an error occurs.
 	 */
 	public onError(message: any): void {
-		this.log('error', message);
+		this._logger.error(message);
+	}
+
+	/**
+	 * Displays a modal dialog that shows an error message. This API can be called
+	 * safely before the ready event the app module emits, it is usually used to report
+	 * errors in early stage of startup.  If called before the app readyevent on Linux,
+	 * the message will be emitted to stderr, and no GUI dialog will appear.
+	 */
+	public showErrorBox(title: string, content: string): void {
+		eltr.dialog.showErrorBox(title, content);
 	}
 
 
@@ -371,6 +379,31 @@ export abstract class ElectronAppBase {
 	}
 
 
+	private createLogger(): MainLogger {
+		let dirPath = this._options.logDirPath,
+			loggerOpts = dirPath
+				? {
+					debugDirPath: dirPath,
+					errorDirPath: dirPath,
+				}
+				: null;
+
+		return new MainLogger(loggerOpts);
+	}
+
+	private initOptions(options: ElectronAppOptions): ElectronAppOptions {
+		const DEFAULT_OPTS: ElectronAppOptions = {
+			globalClose: false,
+			logDirPath: path.join(process.cwd(), 'logs'),
+			quitWhenAllWindowsClosed: true,
+			serveStaticFiles: true,
+			staticFileDomain: 'localhost',
+			staticFilePort: 30000
+		};
+
+		return this._options = Object.assign(DEFAULT_OPTS, options);
+	}
+
 	private tryCloseAllWindows(): void {
 		if (!this._options.globalClose || this._isClosingAll) { return; }
 
@@ -404,26 +437,6 @@ export abstract class ElectronAppBase {
 
 		app.on('activate', () => {
 			this.onActivated();
-		});
-	}
-
-	private initLogger(): void {
-		let logPath = this._options.logFilePath;
-		
-		if (!fs.existsSync(logPath)) {
-			fs.mkdirSync(logPath);
-		}
-
-		this._logger = new winston.Logger({
-			transports: [
-				new (winston.transports.Console)({
-					level: 'silly'
-				}),
-				new (winston.transports.File)({
-					filename: path.join(logPath, 'error.txt'),
-					level: 'warn'
-				})
-			]
 		});
 	}
 

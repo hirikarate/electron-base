@@ -3,13 +3,16 @@ const
 	cache = require('gulp-cached'),
 	debug = require("gulp-debug"),
 	dts = require('dts-generator'),
+	header = require('gulp-header'),
 	istanbul = require('gulp-istanbul'),
 	gulp = require("gulp"),
 	merge = require('merge-stream'),
 	mocha = require('gulp-mocha'),
 	remapIstanbul = require('remap-istanbul/lib/gulpRemapIstanbul'),
+	replace = require('gulp-replace'),
 	sequence = require('gulp-watch-sequence'),
 	sourcemaps = require('gulp-sourcemaps'),
+	through = require("through2"),
 	tsc = require("gulp-typescript"),
 	tsProject = tsc.createProject("tsconfig.json"),
 	tslint = require('gulp-tslint'),
@@ -165,8 +168,28 @@ gulp.task('definition', ['compile'], (done) => {
 		verbose: true,
 		exclude: ['src/test/**/*.*', 'typings/**/*.*', 'node_modules/**/*.*', 'dist/**/*.*', 'coverage/**/*.*', '.git/**/*.*', 'gulpfile.js']
 	};
+
+	let onError = function (err) {
+		console.error(err.toString());
+		this.emit('end');
+	};
+
 	del.sync([DEF_FILE]);
-	dts.default(config).then(done);
+	dts.default(config).then(() => { 
+		gulp.src(DEF_FILE)
+			.on('error', onError)
+			.pipe(replace(/([\t\f\v]*)private(.*);[\r\n]*/g, ''))
+			.pipe(replace(/\/src\//g, '/'))
+			.pipe(replace(/\/index'/g, "'"))
+			.pipe(through.obj(function(file, enc, cb) {
+				del.sync([DEF_FILE]);
+				this.push(file);
+				cb();
+			}))
+			.pipe(header('/// <reference path="./global.d.ts" />\r\n\r\n'))
+			.pipe(gulp.dest('./typings'))
+			.on('end', done);
+	});
 });
 
 

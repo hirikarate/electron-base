@@ -2,20 +2,23 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const eltr = require("electron");
 const path = require("path");
-exports.BrowserWindow = (eltr.ipcMain) ? eltr.BrowserWindow : null;
+// export const BrowserWindow: typeof Electron.BrowserWindow = (eltr.ipcMain) ? eltr.BrowserWindow : null;
 /**
  * Use this base class instead of `new BrowserWindow()`.
  * Note: Always call `super.on...()` when overriding
  * event methods such as `onContentLoading`, `onClosing` etc.
  */
-class ElectronWindowBase extends exports.BrowserWindow {
+class ElectronWindowBase {
     /**
      * @param _name Name of this window
      */
-    constructor(_name, options) {
-        super(options);
+    constructor(_name, _options) {
         this._name = _name;
-        this._triggerGlobalClose = (options.triggerGlobalClose = null || options.triggerGlobalClose === true);
+        this._options = _options;
+        let options = this._options;
+        this._triggerGlobalClose = (options == null || options.triggerGlobalClose == null || options.triggerGlobalClose === true);
+        this._internalWin = new eltr.BrowserWindow(options);
+        this._internalWin.setTitle(this._name);
         this.handleEvents();
     }
     /**
@@ -37,17 +40,30 @@ class ElectronWindowBase extends exports.BrowserWindow {
         this._app = app;
     }
     /**
+     * Gets Electron native browser window.
+     * This is a workaround until this issue is fixed: https://github.com/electron/electron/issues/10019
+     */
+    get native() {
+        return this._internalWin;
+    }
+    /**
      * Gets option "triggerGlobalClose" value.
      */
     get triggerGlobalClose() {
         return this._triggerGlobalClose;
     }
     /**
+     * Gets Electron native web contents.
+     */
+    get webContents() {
+        return this._internalWin.webContents;
+    }
+    /**
      * Clears HTTP cache.
      */
     clearCache() {
         return new Promise((resolve) => {
-            this.webContents.session.clearCache(resolve);
+            this._internalWin.webContents.session.clearCache(resolve);
         });
     }
     /**
@@ -77,6 +93,133 @@ class ElectronWindowBase extends exports.BrowserWindow {
         });
     }
     /**
+     * Try to close the window. This has the same effect as a user manually clicking
+     * the close button of the window. The web page may cancel the close though. See
+     * the close event.
+     */
+    close() {
+        this.native.close();
+    }
+    /**
+     * Forces closing the window, the unload and beforeunload event won't be emitted for
+     * the web page, and close event will also not be emitted for this window, but it
+     * guarantees the closed event will be emitted.
+     */
+    destroy() {
+        this.native.destroy();
+    }
+    /**
+     * Focuses on the window.
+     */
+    focus() {
+        this.native.focus();
+    }
+    isFocused() {
+        return this.native.isFocused();
+    }
+    isFullScreen() {
+        return this.native.isFullScreen();
+    }
+    isKiosk() {
+        return this.native.isKiosk();
+    }
+    isModal() {
+        return this.native.isModal();
+    }
+    /**
+     * Maximizes the window. This will also show (but not focus) the window if it isn't
+     * being displayed already.
+     */
+    maximize() {
+        this.native.maximize();
+    }
+    /**
+     * Minimizes the window. On some platforms the minimized window will be shown in
+     * the Dock.
+     */
+    minimize() {
+        this.native.minimize();
+    }
+    /**
+     * Reloads the current web page.
+     */
+    reload() {
+        this.native.reload();
+    }
+    /**
+     * Restores the window from minimized state to its previous state.
+     */
+    restore() {
+        this.native.restore();
+    }
+    /**
+     * Enters or leaves the kiosk mode.
+     */
+    setKiosk(flag) {
+        this.native.setKiosk(flag);
+    }
+    showConfirmBox(title, content, detail) {
+        return this.showMessageBox({
+            buttons: ['Yes', 'No'],
+            message: content,
+            title,
+            detail,
+            defaultId: 1,
+            cancelId: 1,
+            type: 'question',
+            noLink: true
+        }).then((answer) => {
+            return (answer == 0);
+        });
+    }
+    /**
+     * Displays a modal dialog that shows an error message. This API can be called
+     * safely before the ready event the app module emits, it is usually used to report
+     * errors in early stage of startup.  If called before the app readyevent on Linux,
+     * the message will be emitted to stderr, and no GUI dialog will appear.
+     */
+    showErrorBox(title, content) {
+        this.app.showErrorBox(title, content);
+    }
+    /**
+     * Shows a dialog to select folders.
+     * @return A promise to resolve to an array of selected paths (if )
+     */
+    showOpenDialog(options) {
+        return new Promise((resolve, reject) => {
+            eltr.dialog.showOpenDialog(this.native, options, (filePaths) => {
+                // When user closes dialog, `filePaths.length == 1, `filePaths[0]` == undefined
+                if (filePaths && filePaths.length && filePaths[0]) {
+                    resolve(filePaths);
+                    return;
+                }
+                resolve(null);
+            });
+        });
+    }
+    showSaveDialog(options) {
+        return new Promise((resolve, reject) => {
+            eltr.dialog.showSaveDialog(this.native, options, resolve);
+        });
+    }
+    showMessageBox(options) {
+        return new Promise((resolve, reject) => {
+            eltr.dialog.showMessageBox(this.native, options, resolve);
+        });
+    }
+    /**
+     * Unmaximizes the window.
+     */
+    unmaximize() {
+        this.native.unmaximize();
+    }
+    /**
+     * Sets whether the window should be in fullscreen mode.
+     */
+    setFullScreen(flag) {
+        this.native.setFullScreen(flag);
+    }
+    /**
      * Builds and gets absolute path from specified file path.
      * @param filePath Relative path to .html file.
      */
@@ -89,7 +232,7 @@ class ElectronWindowBase extends exports.BrowserWindow {
      */
     loadView(filePath, options) {
         let resource = 'file://' + this.getView(filePath);
-        this.loadURL(resource);
+        this._internalWin.loadURL(resource);
     }
     /**
      * Occurs when the window is going to be closed.
@@ -145,15 +288,16 @@ class ElectronWindowBase extends exports.BrowserWindow {
     handleEvents() {
         // Don't pass in a function like this: `this.on('close', this.onClosing.bind(this));`
         // Because `onClosing` can be overriden by children class.
-        this.on('close', (event) => this.onClosing(event));
-        this.on('closed', () => this.onClosed());
-        this.on('blur', () => this.onBlur());
-        this.on('focus', () => this.onFocus());
-        this.on('ready-to-show', () => this.onShowing());
-        this.on('show', () => this.onShown());
-        this.webContents.on('did-start-loading', () => this.onContentLoading());
-        this.webContents.on('did-finish-load', () => this.onContentLoaded());
-        this.webContents.on('dom-ready', (event) => this.onContentDomReady(event));
+        let win = this._internalWin;
+        win.on('close', (event) => this.onClosing(event));
+        win.on('closed', () => this.onClosed());
+        win.on('blur', () => this.onBlur());
+        win.on('focus', () => this.onFocus());
+        win.on('ready-to-show', () => this.onShowing());
+        win.on('show', () => this.onShown());
+        win.webContents.on('did-start-loading', () => this.onContentLoading());
+        win.webContents.on('did-finish-load', () => this.onContentLoaded());
+        win.webContents.on('dom-ready', (event) => this.onContentDomReady(event));
     }
 }
 exports.ElectronWindowBase = ElectronWindowBase;
