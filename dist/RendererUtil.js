@@ -8,7 +8,13 @@ class RendererUtil {
         if (!electron_1.ipcRenderer) {
             throw NOT_AVAIL_ERROR;
         }
-        this._rendererLogger = new RendererLogger_1.RendererLogger(this.mainApp.logger);
+        this._mainApp = (electron_1.ipcRenderer != null
+            ? electron_1.remote.getGlobal('app')
+            : null);
+        this._parentWindow = (electron_1.ipcRenderer != null && this._mainApp != null
+            ? this._mainApp.findWindow(electron_1.remote.getCurrentWindow()['name'])
+            : null);
+        this._rendererLogger = new RendererLogger_1.RendererLogger(this._mainApp.logger);
     }
     get logger() {
         return this._rendererLogger;
@@ -17,18 +23,13 @@ class RendererUtil {
      * Gets instance of main app class.
      */
     get mainApp() {
-        return (electron_1.ipcRenderer != null
-            ? electron_1.remote.getGlobal('app')
-            : null);
+        return this._mainApp;
     }
     /**
      * Gets instance of parent window of this renderer process.
      */
     get parentWindow() {
-        let mainApp = this.mainApp;
-        return (electron_1.ipcRenderer != null && mainApp != null
-            ? mainApp.findWindow(electron_1.remote.getCurrentWindow()['name'])
-            : null);
+        return this._parentWindow;
     }
     /**
      * Calls a method from app class asynchronously, it will run on main process.
@@ -37,7 +38,7 @@ class RendererUtil {
      * @param params List of parameters to send to the remote method.
      */
     callRemoteMain(func, ...params) {
-        let mainApp = this.mainApp, result = mainApp[func].apply(mainApp, params);
+        let mainApp = this._mainApp, result = mainApp[func].apply(mainApp, params);
         if (!(result instanceof Promise)) {
             throw NOT_PROMISE_ERROR;
         }
@@ -50,7 +51,7 @@ class RendererUtil {
      * @param params List of parameters to send to the remote method.
      */
     callRemoteMainSync(func, ...params) {
-        let mainApp = this.mainApp;
+        let mainApp = this._mainApp;
         return mainApp[func].apply(mainApp, params);
     }
     /**
@@ -60,7 +61,7 @@ class RendererUtil {
      * @param params List of parameters to send to the remote method.
      */
     callRemoteWindow(func, ...params) {
-        let parentWindow = this.parentWindow, result = parentWindow[func].apply(parentWindow, params);
+        let parentWindow = this._parentWindow, result = parentWindow[func].apply(parentWindow, params);
         if (!(result instanceof Promise)) {
             throw NOT_PROMISE_ERROR;
         }
@@ -73,7 +74,7 @@ class RendererUtil {
      * @param params List of parameters to send to the remote method.
      */
     callRemoteWindowSync(func, ...params) {
-        let parentWindow = this.parentWindow;
+        let parentWindow = this._parentWindow;
         return parentWindow[func].apply(parentWindow, params);
     }
     /**
@@ -132,7 +133,8 @@ class RendererUtil {
     shareGlobalVars() {
         this.addGlobal('appRoot', electron_1.remote.getGlobal('appRoot'));
         this.addGlobal('webRoot', electron_1.remote.getGlobal('webRoot'));
-        this.addGlobal('windowName', this.parentWindow.name);
+        this.addGlobal('packMode', this._mainApp.options.packMode);
+        this.addGlobal('windowName', this._parentWindow.name);
         return this;
     }
 }
