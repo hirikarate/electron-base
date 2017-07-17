@@ -43,14 +43,29 @@ class MainLogger {
         return this.logError('error', message);
     }
     logConsole(level, message) {
+        if (!message) {
+            return;
+        }
         return this.log(level, message, this._infoLogger);
     }
     logDebug(level, message) {
+        if (!message) {
+            return;
+        }
         return this.log(level, message, this._debugLogger);
     }
-    logError(level, message) {
-        let error = new Error(message);
-        return this.log(level, util.format('%s. Stacktrace: %s', error.message, error.stack), this._errorLogger);
+    logError(level, error) {
+        if (!error) {
+            return;
+        }
+        let text;
+        if (error.message || error.stack) {
+            text = util.format('%s. Stacktrace: %s', error.message || '', error.stack || '');
+        }
+        else {
+            text = error;
+        }
+        return this.log(level, text, this._errorLogger);
     }
     log(level, message, logger) {
         return new Promise((resolve, reject) => {

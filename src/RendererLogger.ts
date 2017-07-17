@@ -42,7 +42,9 @@ export class RendererLogger {
 	 */
 	public error(message: any): void {
 		console.error(message);
-		this._mainLogger.error(message);
+		
+		let error = (message instanceof Error) ? message : new Error(message + '');
+		this._mainLogger.error(error);
 	}
 
 }

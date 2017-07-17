@@ -71,16 +71,28 @@ export class MainLogger {
 
 
 	private logConsole(level: LogLevel, message: any): Promise<void> {
+		if (!message) { return; }
+		
 		return this.log(level, message, this._infoLogger);
 	}
 
 	private logDebug(level: LogLevel, message: any): Promise<void> {
+		if (!message) { return; }
+		
 		return this.log(level, message, this._debugLogger);
 	}
 
-	private logError(level: LogLevel, message: any): Promise<void> {
-		let error = new Error(message);
-		return this.log(level, util.format('%s. Stacktrace: %s', error.message, error.stack), this._errorLogger);
+	private logError(level: LogLevel, error: any): Promise<void> {
+		if (!error) { return; }
+
+		let text;
+		if (error.message || error.stack) {
+			text = util.format('%s. Stacktrace: %s', error.message || '', error.stack || '');
+		} else {
+			text = error;
+		}
+
+		return this.log(level, text, this._errorLogger);
 	}
 
 	private log(level: LogLevel, message: any, logger: winston.LoggerInstance): Promise<void> {
