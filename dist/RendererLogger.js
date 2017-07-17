@@ -35,7 +35,8 @@ class RendererLogger {
      */
     error(message) {
         console.error(message);
-        this._mainLogger.error(message);
+        let error = (message instanceof Error) ? message : new Error(message + '');
+        this._mainLogger.error(error);
     }
 }
 exports.RendererLogger = RendererLogger;
