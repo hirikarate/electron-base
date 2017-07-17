@@ -79,7 +79,8 @@ export class MainLogger {
 	}
 
 	private logError(level: LogLevel, message: any): Promise<void> {
-		return this.log(level, message, this._errorLogger);
+		let error = new Error(message);
+		return this.log(level, util.format('%s. Stacktrace: %s', error.message, error.stack), this._errorLogger);
 	}
 
 	private log(level: LogLevel, message: any, logger: winston.LoggerInstance): Promise<void> {
