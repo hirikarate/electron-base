@@ -32,6 +32,8 @@ Provides abstract base app class and window class for other Electron app to inhe
 	* Provides some delegated methods from native BrowserWindow class.
 	* Provides methods to open different types of dialogs.
 - Do not need to edit `app.d.ts` file manually anymore. Everything is automatic when `gulp release`.
+- Added `packMode` to `ElectronAppOptions` and `global`.
+- Use a custom `tiny-cdn` repo to make it work with Webpack.
 
 ### 0.1.1
 

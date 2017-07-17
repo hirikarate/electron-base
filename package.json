@@ -9,7 +9,7 @@
     "node-pre-gyp": "~0.6.31",
     "remap-istanbul": "^0.9.5",
     "sync-exec": "^0.6.2",
-    "tiny-cdn": "^0.7.0",
+    "tiny-cdn": "git+https://github.com/hirikarate/tiny-cdn.git",
     "winston": "^2.3.1",
     "winston-daily-rotate-file": "^1.4.6"
   },

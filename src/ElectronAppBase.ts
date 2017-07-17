@@ -51,6 +51,11 @@ export interface ElectronAppOptions {
 	 * Default is "true".
 	 */
 	quitWhenAllWindowsClosed?: boolean;
+
+	/**
+	 * Whether this code is packed in .asar archive.
+	 */
+	packMode?: boolean;
 }
 
 enum AppStatus { NotReady, Ready, Started }
@@ -74,6 +79,13 @@ export abstract class ElectronAppBase {
 	 */
 	public get logger(): MainLogger {
 		return this._logger;
+	}
+
+	/**
+	 * Gets application settings.
+	 */
+	public get options(): ElectronAppOptions {
+		return this._options;
 	}
 
 	/**
@@ -107,21 +119,15 @@ export abstract class ElectronAppBase {
 
 
 	constructor(appRoot: string, private _options: ElectronAppOptions = {}) {
-		
-		// If this is main process
-		if (eltr.ipcMain) {
-			Object.defineProperty(global, 'appRoot', {
-				value: appRoot,
-				writable: false // Add read-only property
-			});
-		}
 
 		this.initOptions(_options);
+		this._logger = this.createLogger();
+
+		this.initAppRoot(appRoot);
 
 		this._core = eltr.app;
 		this._ipcMain = eltr.ipcMain;
 		this._windows = new Map<string, ElectronWindowBase>();
-		this._logger = this.createLogger();
 
 		this._event = new EventEmitter();
 		this._quitHandlers = [];
@@ -132,13 +138,15 @@ export abstract class ElectronAppBase {
 		global.app = this;
 	}
 
-
 	public abstract isDebug(): boolean;
 
 	/**
 	 * Starts application
 	 */
 	public start(): void {
+		if (this.isDebug()) {
+			this.logger.debug('App is starting!');
+		}
 		this.onStarting();
 
 		this.handleEvents();
@@ -160,6 +168,11 @@ export abstract class ElectronAppBase {
 			startPromise.then(() => {
 				this._status = AppStatus.Started;
 				this.onStarted();
+
+				if (this.isDebug()) {
+					this.logger.debug('App has started!');
+				}
+
 				startPromise = null;
 				this._event = null;
 			});
@@ -179,16 +192,37 @@ export abstract class ElectronAppBase {
 	 * @return If quit process is successful or not.
 	 */
 	public quit(force: boolean = false): Promise<boolean> {
+		if (this.isDebug()) {
+			this.logger.debug('App is attempting to quit!');
+		}
+		
+		if (!this._quitHandlers.length) {
+			if (this.isDebug()) {
+				this.logger.debug('App now exits with no quit handlers!');
+			}
+			this._core.quit();
+			return Promise.resolve(true);
+		}
+
 		let handlerPromises = this._quitHandlers.map(handler => handler(force));
 		
+
 		return Promise.all(handlerPromises).then(results => {
 			// If at least one of the results is "false", cancel quit process.
 			let cancel = results.reduce((prev, r) => r && prev, true);
 			
 			// If the app is forced to quit, or if nobody prevents it from quitting.
 			if (force || !cancel) {
+				if (this.isDebug()) {
+					this.logger.debug('App now exits! Force: ' + force);
+				}
+
 				this._core.quit();
 				return true;
+			}
+
+			if (this.isDebug()) {
+				this.logger.debug('App quit is cancelled');
 			}
 			return false;
 		});
@@ -391,6 +425,28 @@ export abstract class ElectronAppBase {
 		return new MainLogger(loggerOpts);
 	}
 
+	private initAppRoot(appRoot: string): void {
+		if (this._options.packMode) {
+			appRoot = path.join(process.cwd(), 'resources', 'app.asar');
+
+			if (this.isDebug()) {
+				this.logger.debug('packMode is ON');
+			}
+		}
+		
+		// If this is main process
+		if (eltr.ipcMain) {
+			Object.defineProperty(global, 'appRoot', {
+				value: appRoot,
+				writable: false // Add read-only property
+			});
+		}
+
+		if (this.isDebug()) {
+			this.logger.debug('appRoot: ' + global.appRoot);
+		}
+	}
+
 	private initOptions(options: ElectronAppOptions): ElectronAppOptions {
 		const DEFAULT_OPTS: ElectronAppOptions = {
 			globalClose: false,
@@ -398,7 +454,8 @@ export abstract class ElectronAppBase {
 			quitWhenAllWindowsClosed: true,
 			serveStaticFiles: true,
 			staticFileDomain: 'localhost',
-			staticFilePort: 30000
+			staticFilePort: 30000,
+			packMode: false
 		};
 
 		return this._options = Object.assign(DEFAULT_OPTS, options);
@@ -431,7 +488,7 @@ export abstract class ElectronAppBase {
 		app.on('window-all-closed', () => {
 			this.onAllWindowsClosed();
 			if (this._options.quitWhenAllWindowsClosed) {
-				this._core.quit();
+				this.quit();
 			}
 		});
 
@@ -488,6 +545,9 @@ export abstract class ElectronAppBase {
 					writable: false
 				});
 
+				if (this.isDebug()) {
+					this.logger.debug('webRoot: ' + global.webRoot);
+				}
 				resolve();
 			})
 			.on('error', (err) => this.onError(err));

@@ -19,6 +19,11 @@ declare namespace NodeJS {
 		webRoot: string;
 
 		/**
+		 * Indicates whether this code is packed in ASAR archive
+		 */
+		packMode: boolean;
+
+		/**
 		 * Name of the window in which this script is running.
 		 * This property is only available on renderer thread.
 		 */

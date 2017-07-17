@@ -273,6 +273,10 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     * Default is "true".
 	     */
 	    quitWhenAllWindowsClosed?: boolean;
+	    /**
+	     * Whether this code is packed in .asar archive.
+	     */
+	    packMode?: boolean;
 	}
 	export abstract class ElectronAppBase {
 	    	    protected readonly _windows: Map<string, ElectronWindowBase>;
@@ -282,6 +286,10 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     * Gets logger.
 	     */
 	    readonly logger: MainLogger;
+	    /**
+	     * Gets application settings.
+	     */
+	    readonly options: ElectronAppOptions;
 	    /**
 	     * Gets absolute path to folder that contains html files.
 	     */
@@ -380,7 +388,7 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     * Occurs after application has created all windows.
 	     */
 	    protected onStarted(): void;
-	    	    	    	    	    	    	    	}
+	    	    	    	    	    	    	    	    	}
 
 }
 declare module 'front-lib-electron-base/RendererLogger' {
@@ -394,27 +402,23 @@ declare module 'front-lib-electron-base/RendererLogger' {
 	    /**
 	     * Writes info message to browser console.
 	     * @param message A string, support %s (string), %i (number).
-	     * @param optionalParams Params to take place of %s and %i in `message`.
 	     */
-	    info(message?: any, ...optionalParams: any[]): void;
+	    info(message: any): void;
 	    /**
 	     * Writes debug message to browser console.
 	     * @param message A string, support %s (string), %i (number).
-	     * @param optionalParams Params to take place of %s and %i in `message`.
 	     */
-	    debug(message?: any, ...optionalParams: any[]): void;
+	    debug(message: any): void;
 	    /**
 	     * Writes warn message to browser console.
 	     * @param message A string, support %s (string), %i (number).
-	     * @param optionalParams Params to take place of %s and %i in `message`.
 	     */
-	    warn(message?: any, ...optionalParams: any[]): void;
+	    warn(message: any): void;
 	    /**
 	     * Writes error message to browser console AND sends to main process to dumb to file.
 	     * @param message A string, support %s (string), %i (number).
-	     * @param optionalParams Params to take place of %s and %i in `message`.
 	     */
-	    error(message?: any, ...optionalParams: any[]): void;
+	    error(message: any): void;
 	}
 
 }
@@ -423,7 +427,7 @@ declare module 'front-lib-electron-base/RendererUtil' {
 	import { ElectronWindowBase } from 'front-lib-electron-base/ElectronWindowBase';
 	import { RendererLogger } from 'front-lib-electron-base/RendererLogger';
 	export class RendererUtil {
-	    	    	    constructor();
+	    	    	    	    	    constructor();
 	    readonly logger: RendererLogger;
 	    /**
 	     * Gets instance of main app class.

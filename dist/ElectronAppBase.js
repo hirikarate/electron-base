@@ -17,18 +17,12 @@ var AppStatus;
 class ElectronAppBase {
     constructor(appRoot, _options = {}) {
         this._options = _options;
-        // If this is main process
-        if (eltr.ipcMain) {
-            Object.defineProperty(global, 'appRoot', {
-                value: appRoot,
-                writable: false // Add read-only property
-            });
-        }
         this.initOptions(_options);
+        this._logger = this.createLogger();
+        this.initAppRoot(appRoot);
         this._core = eltr.app;
         this._ipcMain = eltr.ipcMain;
         this._windows = new Map();
-        this._logger = this.createLogger();
         this._event = new events_1.EventEmitter();
         this._quitHandlers = [];
         this._isClosingAll = false;
@@ -41,6 +35,12 @@ class ElectronAppBase {
      */
     get logger() {
         return this._logger;
+    }
+    /**
+     * Gets application settings.
+     */
+    get options() {
+        return this._options;
     }
     /**
      * Gets absolute path to folder that contains html files.
@@ -70,6 +70,9 @@ class ElectronAppBase {
      * Starts application
      */
     start() {
+        if (this.isDebug()) {
+            this.logger.debug('App is starting!');
+        }
         this.onStarting();
         this.handleEvents();
         let startPromise = new Promise(resolve => {
@@ -86,6 +89,9 @@ class ElectronAppBase {
             startPromise.then(() => {
                 this._status = AppStatus.Started;
                 this.onStarted();
+                if (this.isDebug()) {
+                    this.logger.debug('App has started!');
+                }
                 startPromise = null;
                 this._event = null;
             });
@@ -102,14 +108,30 @@ class ElectronAppBase {
      * @return If quit process is successful or not.
      */
     quit(force = false) {
+        if (this.isDebug()) {
+            this.logger.debug('App is attempting to quit!');
+        }
+        if (!this._quitHandlers.length) {
+            if (this.isDebug()) {
+                this.logger.debug('App now exits with no quit handlers!');
+            }
+            this._core.quit();
+            return Promise.resolve(true);
+        }
         let handlerPromises = this._quitHandlers.map(handler => handler(force));
         return Promise.all(handlerPromises).then(results => {
             // If at least one of the results is "false", cancel quit process.
             let cancel = results.reduce((prev, r) => r && prev, true);
             // If the app is forced to quit, or if nobody prevents it from quitting.
             if (force || !cancel) {
+                if (this.isDebug()) {
+                    this.logger.debug('App now exits! Force: ' + force);
+                }
                 this._core.quit();
                 return true;
+            }
+            if (this.isDebug()) {
+                this.logger.debug('App quit is cancelled');
             }
             return false;
         });
@@ -280,6 +302,24 @@ class ElectronAppBase {
             : null;
         return new MainLogger_1.MainLogger(loggerOpts);
     }
+    initAppRoot(appRoot) {
+        if (this._options.packMode) {
+            appRoot = path.join(process.cwd(), 'resources', 'app.asar');
+            if (this.isDebug()) {
+                this.logger.debug('packMode is ON');
+            }
+        }
+        // If this is main process
+        if (eltr.ipcMain) {
+            Object.defineProperty(global, 'appRoot', {
+                value: appRoot,
+                writable: false // Add read-only property
+            });
+        }
+        if (this.isDebug()) {
+            this.logger.debug('appRoot: ' + global.appRoot);
+        }
+    }
     initOptions(options) {
         const DEFAULT_OPTS = {
             globalClose: false,
@@ -287,7 +327,8 @@ class ElectronAppBase {
             quitWhenAllWindowsClosed: true,
             serveStaticFiles: true,
             staticFileDomain: 'localhost',
-            staticFilePort: 30000
+            staticFilePort: 30000,
+            packMode: false
         };
         return this._options = Object.assign(DEFAULT_OPTS, options);
     }
@@ -315,7 +356,7 @@ class ElectronAppBase {
         app.on('window-all-closed', () => {
             this.onAllWindowsClosed();
             if (this._options.quitWhenAllWindowsClosed) {
-                this._core.quit();
+                this.quit();
             }
         });
         app.on('activate', () => {
@@ -361,6 +402,9 @@ class ElectronAppBase {
                     value: `http://${domain}:${port}`,
                     writable: false
                 });
+                if (this.isDebug()) {
+                    this.logger.debug('webRoot: ' + global.webRoot);
+                }
                 resolve();
             })
                 .on('error', (err) => this.onError(err));
