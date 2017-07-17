@@ -100,20 +100,36 @@ declare module 'front-lib-electron-base/ElectronWindowBase' {
 	     * Enters or leaves the kiosk mode.
 	     */
 	    setKiosk(flag: boolean): void;
+	    /**
+	     * Displays a modal dialog that tells user something.
+	     * This is similar to `alert()` function.
+	     */
+	    showInfoBox(title: string, content: string, detail?: string): Promise<void>;
+	    /**
+	     * Displays a modal dialog that asks user to choose Yes or No.
+	     * This is similar to `confirm()` function.
+	     */
 	    showConfirmBox(title: string, content: string, detail?: string): Promise<boolean>;
 	    /**
-	     * Displays a modal dialog that shows an error message. This API can be called
-	     * safely before the ready event the app module emits, it is usually used to report
-	     * errors in early stage of startup.  If called before the app readyevent on Linux,
-	     * the message will be emitted to stderr, and no GUI dialog will appear.
+	     * Displays a modal dialog that shows an error message.
 	     */
-	    showErrorBox(title: string, content: string): void;
+	    showErrorBox(title: string, content: string, detail?: string): Promise<void>;
 	    /**
-	     * Shows a dialog to select folders.
-	     * @return A promise to resolve to an array of selected paths (if )
+	     * Shows a dialog to select folders to open.
+	     * @return A promise to resolve to an array of selected paths, and to null if user cancels the dialog.
 	     */
 	    showOpenDialog(options?: Electron.OpenDialogOptions): Promise<string[]>;
+	    /**
+	     * Shows a dialog to select a file to save.
+	     * @return A promise to resolve to the selected path, and to null if user cancels the dialog.
+	     */
 	    showSaveDialog(options?: Electron.SaveDialogOptions): Promise<string>;
+	    /**
+	     * Shows a message dialog.
+	     * @return A promise to resolve to:
+	     * 	`response` is index of the clicked button;
+	     * 	`checkboxChecked` tells whether user selects the checkbox (if visible)
+	     */
 	    showMessageBox(options?: Electron.MessageBoxOptions): Promise<{
 	        response: number;
 	        checkboxChecked: boolean;

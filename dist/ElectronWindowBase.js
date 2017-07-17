@@ -158,6 +158,26 @@ class ElectronWindowBase {
     setKiosk(flag) {
         this.native.setKiosk(flag);
     }
+    /**
+     * Displays a modal dialog that tells user something.
+     * This is similar to `alert()` function.
+     */
+    showInfoBox(title, content, detail) {
+        return this.showMessageBox({
+            buttons: ['OK'],
+            message: content,
+            title,
+            detail,
+            type: 'info',
+            noLink: true
+        }).then((answer) => {
+            return;
+        });
+    }
+    /**
+     * Displays a modal dialog that asks user to choose Yes or No.
+     * This is similar to `confirm()` function.
+     */
     showConfirmBox(title, content, detail) {
         return this.showMessageBox({
             buttons: ['Yes', 'No'],
@@ -166,24 +186,29 @@ class ElectronWindowBase {
             detail,
             defaultId: 1,
             cancelId: 1,
-            type: 'question',
+            type: 'warning',
             noLink: true
         }).then((answer) => {
             return (answer == 0);
         });
     }
     /**
-     * Displays a modal dialog that shows an error message. This API can be called
-     * safely before the ready event the app module emits, it is usually used to report
-     * errors in early stage of startup.  If called before the app readyevent on Linux,
-     * the message will be emitted to stderr, and no GUI dialog will appear.
+     * Displays a modal dialog that shows an error message.
      */
-    showErrorBox(title, content) {
-        this.app.showErrorBox(title, content);
+    showErrorBox(title, content, detail) {
+        return this.showMessageBox({
+            buttons: ['OK'],
+            message: content,
+            title,
+            detail,
+            type: 'error',
+        }).then((answer) => {
+            return;
+        });
     }
     /**
-     * Shows a dialog to select folders.
-     * @return A promise to resolve to an array of selected paths (if )
+     * Shows a dialog to select folders to open.
+     * @return A promise to resolve to an array of selected paths, and to null if user cancels the dialog.
      */
     showOpenDialog(options) {
         return new Promise((resolve, reject) => {
@@ -197,11 +222,21 @@ class ElectronWindowBase {
             });
         });
     }
+    /**
+     * Shows a dialog to select a file to save.
+     * @return A promise to resolve to the selected path, and to null if user cancels the dialog.
+     */
     showSaveDialog(options) {
         return new Promise((resolve, reject) => {
             eltr.dialog.showSaveDialog(this.native, options, resolve);
         });
     }
+    /**
+     * Shows a message dialog.
+     * @return A promise to resolve to:
+     * 	`response` is index of the clicked button;
+     * 	`checkboxChecked` tells whether user selects the checkbox (if visible)
+     */
     showMessageBox(options) {
         return new Promise((resolve, reject) => {
             eltr.dialog.showMessageBox(this.native, options, resolve);
