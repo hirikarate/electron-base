@@ -109,7 +109,7 @@ class ElectronAppBase {
      */
     quit(force = false) {
         if (this.isDebug()) {
-            this.logger.debug('App is attempting to quit!');
+            this.logger.debug('App is attempting to exit!');
         }
         if (!this._quitHandlers.length) {
             if (this.isDebug()) {

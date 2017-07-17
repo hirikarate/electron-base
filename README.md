@@ -25,7 +25,7 @@ Provides abstract base app class and window class for other Electron app to inhe
 ### 0.2.0
 
 - **RendererUtil**: Do not allow creating new instance. Must use singleton with `import { rendererUtil } from 'front-lib-electron-base';`
-- **MainLogger**: Logger used by main process to write messages to system console and file. Cannot create new instance, must use with `this.logger` (inside main app class) and `rendererUtil.mainApp.logger` (inside renderer process).
+- **MainLogger**: Logger used by main process to write messages to system console and file (including stacktrace). Cannot create new instance, must use with `this.logger` (inside main app class) and `rendererUtil.mainApp.logger` (inside renderer process).
 - **RendererLogger**: Logger used by renderer process to write messages to browser console, but also can write errors to file. Cannot create new instance, must use with `rendererUtil.logger`.
 - **ElectronWindowBase**:
     * Fixed the bug where modal dialog appears as a standalone window.

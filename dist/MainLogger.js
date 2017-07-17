@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs = require("fs");
 const path = require("path");
+const util = require("util");
 const winston = require("winston");
 require("winston-daily-rotate-file");
 const DEFAULT_LOCATION = path.join(process.cwd(), 'logs');
@@ -48,7 +49,8 @@ class MainLogger {
         return this.log(level, message, this._debugLogger);
     }
     logError(level, message) {
-        return this.log(level, message, this._errorLogger);
+        let error = new Error(message);
+        return this.log(level, util.format('%s. Stacktrace: %s', error.message, error.stack), this._errorLogger);
     }
     log(level, message, logger) {
         return new Promise((resolve, reject) => {

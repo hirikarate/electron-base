@@ -193,7 +193,7 @@ export abstract class ElectronAppBase {
 	 */
 	public quit(force: boolean = false): Promise<boolean> {
 		if (this.isDebug()) {
-			this.logger.debug('App is attempting to quit!');
+			this.logger.debug('App is attempting to exit!');
 		}
 		
 		if (!this._quitHandlers.length) {
