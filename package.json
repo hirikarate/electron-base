@@ -1,5 +1,5 @@
 {
-  "name": "front-lib-electron-base",
+  "name": "electron-base",
   "description": "Provides abstract base app class and window class for other Electron app to inherit.",
   "version": "0.2.0",
   "main": "./dist/index.js",
@@ -7,7 +7,6 @@
   "dependencies": {
     "electron": "~1.6.11",
     "node-pre-gyp": "~0.6.31",
-    "remap-istanbul": "^0.9.5",
     "sync-exec": "^0.6.2",
     "tiny-cdn": "git+https://github.com/hirikarate/tiny-cdn.git",
     "winston": "^2.3.1",
@@ -39,6 +38,7 @@
     "gulp-uglifycss": "^1.0.8",
     "gulp-watch": "^4.3.11",
     "gulp-watch-sequence": "^1.0.0",
+    "remap-istanbul": "^0.9.5",
     "merge-stream": "^1.0.1",
     "through2": "^2.0.3",
     "tslint": "^5.4.3",
