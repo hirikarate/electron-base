@@ -53,107 +53,29 @@ export class RendererUtil {
 		return this._parentWindow;
 	}
 
-
 	/**
-	 * Calls a method from app class asynchronously, it will run on main process.
-	 * Unlike `callIpc`, this method can send and receive all types of JS objects.
+	 * Calls a method from app class, it will run on main process.
+	 * Can only send and receive serialziable JSON objects.
 	 * @param func Function name.
 	 * @param params List of parameters to send to the remote method.
 	 */
-	public callRemoteMain(func: string, ...params): Promise<any> {
-		let mainApp = this._mainApp,
-			result = mainApp[func].apply(mainApp, params);
-		
-		if (!(result instanceof Promise)) {
-			throw NOT_PROMISE_ERROR;
-		}
-		return result;
-	}
-
-	/**
-	 * Calls a method from app class and waits for it to complete, it will run on main process.
-	 * Unlike `callIpcSync`, this method can send and receive all types of JS objects.
-	 * @param func Function name.
-	 * @param params List of parameters to send to the remote method.
-	 */
-	public callRemoteMainSync(func: string, ...params): any {
+	public callRemoteMain(func: string, ...params): any & Promise<any> {
 		let mainApp = this._mainApp;
 		return mainApp[func].apply(mainApp, params);
 	}
 
 	/**
-	 * Calls a method from parent window asynchronously, it will run on main process.
-	 * Unlike `callIpc`, this method can send and receive all types of JS objects.
+	 * Calls a method from parent window, it will run on main process.
+	 * Can only send and receive serialziable JSON objects.
 	 * @param func Function name.
 	 * @param params List of parameters to send to the remote method.
 	 */
-	public callRemoteWindow(func: string, ...params): Promise<any> {
-		let parentWindow = this._parentWindow,
-			result = parentWindow[func].apply(parentWindow, params);
-
-		if (!(result instanceof Promise)) {
-			throw NOT_PROMISE_ERROR;
-		}
-		return result;
-	}
-
-	/**
-	 * Calls a method from parent window and waits for it to complete, it will run on main process.
-	 * Unlike `callIpc`, this method can send and receive all types of JS objects.
-	 * @param func Function name.
-	 * @param params List of parameters to send to the remote method.
-	 */
-	public callRemoteWindowSync(func: string, ...params): any {
+	public callRemoteWindow(func: string, ...params): any & Promise<any> {
 		let parentWindow = this._parentWindow;
 		return parentWindow[func].apply(parentWindow, params);
 	}
 
-	/**
-	 * @deprecated
-	 * Calls a function from main process asynchronously with inter-process message.
-	 * Can only send and receive serialziable JSON objects.
-	 * @param windowName The window name to call functions from. If null, call function in app class.
-	 * @param func Function name.
-	 * @param params List of parameters to send to the function.
-	 */
-	public callIpc(windowName: string, func: string, ...params): Promise<any> {
-		return new Promise<any>((resolve, reject) => {
-			let responseChannel = func + '-response';
-			
-			ipcRenderer.once(responseChannel, (event, arg) => {
-				if (!arg.error) {
-					reject(arg.error);
-					return;
-				}
-				resolve(arg.result);
-			});
-			
-			ipcRenderer.send('async-func-call', {
-				func: func,
-				params: Array.prototype.slice.call(arguments, 3),
-				response: responseChannel,
-				target: windowName
-			});
-		});
-	}
 
-	/**
-	 * @deprecated
-	 * Calls a function from main process and waits for it to complete.
-	 * Can only send and receive serialziable JSON objects.
-	 * @param windowName The window name to call functions from. If null, call function in app class.
-	 * @param func Function name.
-	 * @param params List of parameters to send to the function.
-	 */
-	public callIpcSync(windowName: string, func: string, ...params): { result, error } {
-		return <any>ipcRenderer.sendSync('sync-func-call', {
-			func: func,
-			params: Array.prototype.slice.call(arguments, 2),
-			target: windowName
-		});
-	}
-
-	
 	private addGlobal(name, value) {
 		if (global[name] !== undefined) { return; }
 

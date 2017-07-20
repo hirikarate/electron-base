@@ -416,9 +416,9 @@ declare module 'front-lib-electron-base/RendererLogger' {
 	    warn(message: any): void;
 	    /**
 	     * Writes error message to browser console AND sends to main process to dumb to file.
-	     * @param message A string, support %s (string), %i (number).
+	     * @param error A string, support %s (string), %i (number).
 	     */
-	    error(message: any): void;
+	    error(error: any): void;
 	}
 
 }
@@ -438,54 +438,19 @@ declare module 'front-lib-electron-base/RendererUtil' {
 	     */
 	    readonly parentWindow: ElectronWindowBase;
 	    /**
-	     * Calls a method from app class asynchronously, it will run on main process.
-	     * Unlike `callIpc`, this method can send and receive all types of JS objects.
-	     * @param func Function name.
-	     * @param params List of parameters to send to the remote method.
-	     */
-	    callRemoteMain(func: string, ...params: any[]): Promise<any>;
-	    /**
-	     * Calls a method from app class and waits for it to complete, it will run on main process.
-	     * Unlike `callIpcSync`, this method can send and receive all types of JS objects.
-	     * @param func Function name.
-	     * @param params List of parameters to send to the remote method.
-	     */
-	    callRemoteMainSync(func: string, ...params: any[]): any;
-	    /**
-	     * Calls a method from parent window asynchronously, it will run on main process.
-	     * Unlike `callIpc`, this method can send and receive all types of JS objects.
-	     * @param func Function name.
-	     * @param params List of parameters to send to the remote method.
-	     */
-	    callRemoteWindow(func: string, ...params: any[]): Promise<any>;
-	    /**
-	     * Calls a method from parent window and waits for it to complete, it will run on main process.
-	     * Unlike `callIpc`, this method can send and receive all types of JS objects.
-	     * @param func Function name.
-	     * @param params List of parameters to send to the remote method.
-	     */
-	    callRemoteWindowSync(func: string, ...params: any[]): any;
-	    /**
-	     * @deprecated
-	     * Calls a function from main process asynchronously with inter-process message.
+	     * Calls a method from app class, it will run on main process.
 	     * Can only send and receive serialziable JSON objects.
-	     * @param windowName The window name to call functions from. If null, call function in app class.
 	     * @param func Function name.
-	     * @param params List of parameters to send to the function.
+	     * @param params List of parameters to send to the remote method.
 	     */
-	    callIpc(windowName: string, func: string, ...params: any[]): Promise<any>;
+	    callRemoteMain(func: string, ...params: any[]): any & Promise<any>;
 	    /**
-	     * @deprecated
-	     * Calls a function from main process and waits for it to complete.
+	     * Calls a method from parent window, it will run on main process.
 	     * Can only send and receive serialziable JSON objects.
-	     * @param windowName The window name to call functions from. If null, call function in app class.
 	     * @param func Function name.
-	     * @param params List of parameters to send to the function.
+	     * @param params List of parameters to send to the remote method.
 	     */
-	    callIpcSync(windowName: string, func: string, ...params: any[]): {
-	        result;
-	        error;
-	    };
+	    callRemoteWindow(func: string, ...params: any[]): any & Promise<any>;
 	    	    /**
 	     * Copies global vars from main process to renderer process.
 	     */
