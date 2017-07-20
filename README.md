@@ -22,6 +22,11 @@ Provides abstract base app class and window class for other Electron app to inhe
 
 ## VERSIONS
 
+### 0.2.1
+
+- **RendererUtil**: Removed deprecated functions
+- **RendererLogger**: Fixed a bug when passing renderer error to main app.
+
 ### 0.2.0
 
 - **RendererUtil**: Do not allow creating new instance. Must use singleton with `import { rendererUtil } from 'front-lib-electron-base';`

@@ -38,12 +38,14 @@ export class RendererLogger {
 
 	/**
 	 * Writes error message to browser console AND sends to main process to dumb to file.
-	 * @param message A string, support %s (string), %i (number).
+	 * @param error A string, support %s (string), %i (number).
 	 */
-	public error(message: any): void {
-		console.error(message);
+	public error(error: any): void {
+		console.error(error);
 		
-		let error = (message instanceof Error) ? message : new Error(message + '');
+		error = (error instanceof Error) 
+			? { message: error.message, stack: error.stack }
+			: { message: error };
 		this._mainLogger.error(error);
 	}
 
