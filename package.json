@@ -1,6 +1,7 @@
 {
   "name": "electron-base",
   "description": "Provides abstract base app class and window class for other Electron app to inherit.",
+  "author": "Rein Chau",
   "version": "0.2.0",
   "main": "./dist/index.js",
   "types": "./typings/app.d.ts",
