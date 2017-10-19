@@ -22,6 +22,11 @@ Provides abstract base app class and window class for other Electron app to inhe
 
 ## VERSIONS
 
+### 0.2.2
+
+- Added `dedup` task to `gulpfile.js`.
+- Updated dependencies' version.
+
 ### 0.2.1
 
 - **RendererUtil**: Removed deprecated functions
