@@ -35,12 +35,36 @@ class RendererLogger {
      */
     error(error) {
         console.error(error);
-        error = (error instanceof Error)
-            ? { message: error.message, stack: error.stack }
-            : { message: error };
+        error = { message: this.errorToString(error), stack: error.stack || '' };
         this._mainLogger.error(error);
+    }
+    errorToString(error) {
+        if ((typeof error) === 'string') {
+            return error;
+        }
+        let msg = '';
+        if (error.type) {
+            msg += error.type + '.';
+        }
+        if (error.name) {
+            msg += error.name + '.';
+        }
+        if (error.stderr) {
+            msg += error.stderr + '.';
+        }
+        if (error.message) {
+            msg += error.message + '.';
+        }
+        if (error.detail) {
+            msg += error.detail + '.';
+        }
+        if (error.details) {
+            msg += error.details + '.';
+        }
+        if (msg == '') {
+            msg = JSON.stringify(error);
+        }
+        return msg;
     }
 }
 exports.RendererLogger = RendererLogger;
-
-//# sourceMappingURL=RendererLogger.js.map

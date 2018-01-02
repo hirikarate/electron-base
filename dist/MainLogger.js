@@ -6,6 +6,13 @@ const util = require("util");
 const winston = require("winston");
 require("winston-daily-rotate-file");
 const DEFAULT_LOCATION = path.join(process.cwd(), 'logs');
+var LogLevel;
+(function (LogLevel) {
+    LogLevel["DEBUG"] = "debug";
+    LogLevel["INFO"] = "info";
+    LogLevel["WARN"] = "warn";
+    LogLevel["ERROR"] = "error";
+})(LogLevel = exports.LogLevel || (exports.LogLevel = {}));
 /**
  * Logger for main process, writes logs to system console and files.
  */
@@ -22,25 +29,25 @@ class MainLogger {
      * Writes message to console.
      */
     info(message) {
-        return this.logConsole('info', message);
+        return this.logConsole(LogLevel.INFO, message);
     }
     /**
      * Writes message to console and debug file.
      */
     debug(message) {
-        return this.logDebug('debug', message);
+        return this.logDebug(LogLevel.DEBUG, message);
     }
     /**
      * Writes message to console and error file.
      */
     warn(message) {
-        return this.logError('warn', message);
+        return this.logError(LogLevel.WARN, message);
     }
     /**
      * Writes message to console and error file.
      */
     error(message) {
-        return this.logError('error', message);
+        return this.logError(LogLevel.WARN, message);
     }
     logConsole(level, message) {
         if (!message) {
@@ -58,18 +65,12 @@ class MainLogger {
         if (!error) {
             return;
         }
-        let text;
-        if (error.message || error.stack) {
-            text = util.format('%s. Stacktrace: %s', error.message || '', error.stack || '');
-        }
-        else {
-            text = error;
-        }
+        let text = util.format('%s.\nStacktrace: %s', this.errorToString(error), error.stack || '');
         return this.log(level, text, this._errorLogger);
     }
     log(level, message, logger) {
         return new Promise((resolve, reject) => {
-            logger.log(level, message + '', (err) => {
+            logger.log(level, this.anyToString(message), (err) => {
                 if (err) {
                     reject(err);
                     return;
@@ -119,7 +120,36 @@ class MainLogger {
             ]
         });
     }
+    errorToString(error) {
+        if ((typeof error) === 'string') {
+            return error;
+        }
+        let msg = '';
+        if (error.type) {
+            msg += error.type + '.';
+        }
+        if (error.name) {
+            msg += error.name + '.';
+        }
+        if (error.stderr) {
+            msg += error.stderr + '.';
+        }
+        if (error.message) {
+            msg += error.message + '.';
+        }
+        if (error.detail) {
+            msg += error.detail + '.';
+        }
+        if (error.details) {
+            msg += error.details + '.';
+        }
+        if (msg == '') {
+            msg = JSON.stringify(error);
+        }
+        return msg;
+    }
+    anyToString(message) {
+        return ((typeof message) === 'string' ? message : JSON.stringify(message));
+    }
 }
 exports.MainLogger = MainLogger;
-
-//# sourceMappingURL=MainLogger.js.map

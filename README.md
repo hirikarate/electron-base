@@ -22,6 +22,11 @@ Provides abstract base app class and window class for other Electron app to inhe
 
 ## VERSIONS
 
+### 0.2.3
+- Improved logger's stringify feature.
+- Added communication utility.
+- Replaced `global.appRoot` with `appDiskRoot` and `appCodeRoot`.
+
 ### 0.2.2
 
 - Added `dedup` task to `gulpfile.js`.

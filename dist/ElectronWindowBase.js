@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const eltr = require("electron");
 const path = require("path");
+const CommunicationUtil_1 = require("./CommunicationUtil");
 // export const BrowserWindow: typeof Electron.BrowserWindow = (eltr.ipcMain) ? eltr.BrowserWindow : null;
 /**
  * Use this base class instead of `new BrowserWindow()`.
@@ -20,6 +21,7 @@ class ElectronWindowBase {
         this._internalWin = new eltr.BrowserWindow(options);
         this._internalWin.setTitle(this._name);
         this.handleEvents();
+        CommunicationUtil_1.CommunicationUtil.startWindowCommunication(_name, this);
     }
     /**
      * Gets this window's name.
@@ -336,5 +338,3 @@ class ElectronWindowBase {
     }
 }
 exports.ElectronWindowBase = ElectronWindowBase;
-
-//# sourceMappingURL=ElectronWindowBase.js.map

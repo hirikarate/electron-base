@@ -199,7 +199,12 @@ declare module 'front-lib-electron-base/ElectronWindowBase' {
 }
 declare module 'front-lib-electron-base/MainLogger' {
 	import 'winston-daily-rotate-file';
-	export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+	export enum LogLevel {
+	    DEBUG = "debug",
+	    INFO = "info",
+	    WARN = "warn",
+	    ERROR = "error",
+	}
 	export interface LoggerOptions {
 	    /**
 	     * Path to directory in which debug file is created.
@@ -233,7 +238,7 @@ declare module 'front-lib-electron-base/MainLogger' {
 	     * Writes message to console and error file.
 	     */
 	    error(message: any): Promise<void>;
-	    	    	    	    	    	}
+	    	    	    	    	    	    	    	}
 
 }
 declare module 'front-lib-electron-base/ElectronAppBase' {
@@ -306,8 +311,8 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     * Gets IPC of main process.
 	    */
 	    protected readonly ipcMain: Electron.IpcMain;
-	    constructor(appRoot: string, _options?: ElectronAppOptions);
-	    abstract isDebug(): boolean;
+	    constructor(_options?: ElectronAppOptions);
+	    readonly abstract isDebug: boolean;
 	    /**
 	     * Starts application
 	     */
@@ -388,7 +393,7 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     * Occurs after application has created all windows.
 	     */
 	    protected onStarted(): void;
-	    	    	    	    	    	    	    	    	}
+	    	    	    	    	    	    	    	}
 
 }
 declare module 'front-lib-electron-base/RendererLogger' {
@@ -419,7 +424,76 @@ declare module 'front-lib-electron-base/RendererLogger' {
 	     * @param error A string, support %s (string), %i (number).
 	     */
 	    error(error: any): void;
-	}
+	    	}
+
+}
+declare module 'front-lib-electron-base/CommunicationUtil' {
+	/// <reference types="electron" />
+	export abstract class CommunicationUtil {
+	    	    /**
+	     * Calls a method from main app class and waits for response, it will run on main process.
+	     * Can only send and receive serialziable JSON objects.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    static callAppSync(func: string, ...params: any[]): void;
+	    /**
+	     * Calls a method from window class and waits for response, it will run on main process.
+	     * Can only send and receive serialziable JSON objects.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    static callWindowSync(func: string, ...params: any[]): void;
+	    /**
+	     * Calls a method from main app class, it will run on main process.
+	     * Can only send and receive serialziable JSON objects.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    static callApp(func: string, ...params: any[]): Promise<any>;
+	    /**
+	     * Calls a method from window class, it will run on main process.
+	     * Can only send and receive serialziable JSON objects.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    static callWindow(func: string, ...params: any[]): Promise<any>;
+	    /**
+	     * Calls a method from renderer process, it will run on renderern process.
+	     * Can only send and receive serialziable JSON objects.
+	     * @param browserWindow Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    static callRenderer(browserWindow: Electron.BrowserWindow, func: string, ...params: any[]): Promise<any>;
+	    /**
+	     * Accepts incoming request to execute functions.
+	     * @param context The object to call functions from.
+	     */
+	    static startRendererCommunication(context: any): void;
+	    /**
+	     * Accepts incoming request to main app class.
+	     * @param context The object to call functions from.
+	     */
+	    static startAppCommunication(context: any): void;
+	    /**
+	     * Accepts incoming request to main app class.
+	     * @param windowName The window name.
+	     * @param context The object to call functions from.
+	     */
+	    static startWindowCommunication(windowName: string, context: any): void;
+	    /**
+	     * Accepts incoming request to execute functions.
+	     * @param id An unique identification string to send ipc message to.
+	     * @param context The object to call functions from.
+	     */
+	    	    /**
+	     * Calls a method from main process, it will run on main process.
+	     * Can only send and receive serialziable JSON objects.
+	     * @param targetId The `id` param when the target calls `startIpcCommunication`.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    	    	    	}
 
 }
 declare module 'front-lib-electron-base/RendererUtil' {
@@ -427,7 +501,7 @@ declare module 'front-lib-electron-base/RendererUtil' {
 	import { ElectronWindowBase } from 'front-lib-electron-base/ElectronWindowBase';
 	import { RendererLogger } from 'front-lib-electron-base/RendererLogger';
 	export class RendererUtil {
-	    	    	    	    	    constructor();
+	    	    	    	    constructor();
 	    readonly logger: RendererLogger;
 	    /**
 	     * Gets instance of main app class.
@@ -437,20 +511,6 @@ declare module 'front-lib-electron-base/RendererUtil' {
 	     * Gets instance of parent window of this renderer process.
 	     */
 	    readonly parentWindow: ElectronWindowBase;
-	    /**
-	     * Calls a method from app class, it will run on main process.
-	     * Can only send and receive serialziable JSON objects.
-	     * @param func Function name.
-	     * @param params List of parameters to send to the remote method.
-	     */
-	    callRemoteMain(func: string, ...params: any[]): any & Promise<any>;
-	    /**
-	     * Calls a method from parent window, it will run on main process.
-	     * Can only send and receive serialziable JSON objects.
-	     * @param func Function name.
-	     * @param params List of parameters to send to the remote method.
-	     */
-	    callRemoteWindow(func: string, ...params: any[]): any & Promise<any>;
 	    	    /**
 	     * Copies global vars from main process to renderer process.
 	     */
@@ -459,6 +519,7 @@ declare module 'front-lib-electron-base/RendererUtil' {
 
 }
 declare module 'front-lib-electron-base' {
+	export * from 'front-lib-electron-base/CommunicationUtil';
 	export * from 'front-lib-electron-base/ElectronAppBase';
 	export { rendererUtil } from 'front-lib-electron-base/RendererUtil';
 	export * from 'front-lib-electron-base/ElectronWindowBase';

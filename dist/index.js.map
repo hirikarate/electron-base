@@ -1,1 +1,0 @@
-{"version":3,"sources":["index.ts"],"names":[],"mappings":";;;;;AAAA,uCAAkC;AAClC,+CAA8C;AAArC,sCAAA,YAAY,CAAA;AACrB,0CAAqC","file":"index.js","sourcesContent":["export * from './ElectronAppBase';\r\nexport { rendererUtil } from './RendererUtil';\r\nexport * from './ElectronWindowBase';"]}

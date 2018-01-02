@@ -8,6 +8,7 @@ const path = require("path");
 const execSyncToBuffer = require("sync-exec");
 const tinyCdn = require('tiny-cdn');
 const MainLogger_1 = require("./MainLogger");
+const CommunicationUtil_1 = require("./CommunicationUtil");
 var AppStatus;
 (function (AppStatus) {
     AppStatus[AppStatus["NotReady"] = 0] = "NotReady";
@@ -15,18 +16,18 @@ var AppStatus;
     AppStatus[AppStatus["Started"] = 2] = "Started";
 })(AppStatus || (AppStatus = {}));
 class ElectronAppBase {
-    constructor(appRoot, _options = {}) {
+    constructor(_options = {}) {
         this._options = _options;
         this.initOptions(_options);
         this._logger = this.createLogger();
-        this.initAppRoot(appRoot);
+        this.initAppRoot();
         this._core = eltr.app;
         this._ipcMain = eltr.ipcMain;
         this._windows = new Map();
         this._event = new events_1.EventEmitter();
         this._quitHandlers = [];
         this._isClosingAll = false;
-        this._viewRoot = `${global.appRoot}/views/`;
+        this._viewRoot = `${global.appCodeRoot}/views/`;
         this._status = AppStatus.NotReady;
         global.app = this;
     }
@@ -70,7 +71,7 @@ class ElectronAppBase {
      * Starts application
      */
     start() {
-        if (this.isDebug()) {
+        if (this.isDebug) {
             this.logger.debug('App is starting!');
         }
         this.onStarting();
@@ -78,7 +79,7 @@ class ElectronAppBase {
         let startPromise = new Promise(resolve => {
             // Only use this when your VGA is blacklisted by Chrome. Check chrome://gpu to know.
             this._core.commandLine.appendSwitch('ignore-gpu-blacklist', 'true');
-            this.startCommunication();
+            CommunicationUtil_1.CommunicationUtil.startAppCommunication(this);
             resolve();
         });
         if (this._options.serveStaticFiles) {
@@ -88,8 +89,11 @@ class ElectronAppBase {
         let onAppReady = () => {
             startPromise.then(() => {
                 this._status = AppStatus.Started;
+                if (this.isDebug) {
+                    this.logger.debug('Calling onStarted event...');
+                }
                 this.onStarted();
-                if (this.isDebug()) {
+                if (this.isDebug) {
                     this.logger.debug('App has started!');
                 }
                 startPromise = null;
@@ -108,11 +112,11 @@ class ElectronAppBase {
      * @return If quit process is successful or not.
      */
     quit(force = false) {
-        if (this.isDebug()) {
+        if (this.isDebug) {
             this.logger.debug('App is attempting to exit!');
         }
         if (!this._quitHandlers.length) {
-            if (this.isDebug()) {
+            if (this.isDebug) {
                 this.logger.debug('App now exits with no quit handlers!');
             }
             this._core.quit();
@@ -121,16 +125,16 @@ class ElectronAppBase {
         let handlerPromises = this._quitHandlers.map(handler => handler(force));
         return Promise.all(handlerPromises).then(results => {
             // If at least one of the results is "false", cancel quit process.
-            let cancel = results.reduce((prev, r) => r && prev, true);
+            let cancel = results.reduce((prev, r) => !r && prev, true);
             // If the app is forced to quit, or if nobody prevents it from quitting.
             if (force || !cancel) {
-                if (this.isDebug()) {
+                if (this.isDebug) {
                     this.logger.debug('App now exits! Force: ' + force);
                 }
                 this._core.quit();
                 return true;
             }
-            if (this.isDebug()) {
+            if (this.isDebug) {
                 this.logger.debug('App quit is cancelled');
             }
             return false;
@@ -302,22 +306,26 @@ class ElectronAppBase {
             : null;
         return new MainLogger_1.MainLogger(loggerOpts);
     }
-    initAppRoot(appRoot) {
+    initAppRoot() {
+        let appDiskRoot, appCodeRoot;
+        appCodeRoot = appDiskRoot = process.cwd();
         if (this._options.packMode) {
-            appRoot = path.join(process.cwd(), 'resources', 'app.asar');
-            if (this.isDebug()) {
+            appCodeRoot = path.join(process.cwd(), 'resources', 'app.asar');
+            if (this.isDebug) {
                 this.logger.debug('packMode is ON');
             }
         }
-        // If this is main process
-        if (eltr.ipcMain) {
-            Object.defineProperty(global, 'appRoot', {
-                value: appRoot,
-                writable: false // Add read-only property
-            });
-        }
-        if (this.isDebug()) {
-            this.logger.debug('appRoot: ' + global.appRoot);
+        Object.defineProperty(global, 'appDiskRoot', {
+            value: appDiskRoot,
+            writable: false // Add read-only property
+        });
+        Object.defineProperty(global, 'appCodeRoot', {
+            value: appCodeRoot,
+            writable: false // Add read-only property
+        });
+        if (this.isDebug) {
+            this.logger.debug('appDiskRoot: ' + global.appDiskRoot);
+            this.logger.debug('appCodeRoot: ' + global.appCodeRoot);
         }
     }
     initOptions(options) {
@@ -402,7 +410,7 @@ class ElectronAppBase {
                     value: `http://${domain}:${port}`,
                     writable: false
                 });
-                if (this.isDebug()) {
+                if (this.isDebug) {
                     this.logger.debug('webRoot: ' + global.webRoot);
                 }
                 resolve();
@@ -414,81 +422,5 @@ class ElectronAppBase {
             process.exit();
         });
     }
-    startCommunication() {
-        // Allow renderer process to call a function in main process
-        // arg = {
-        // 		func: 'function name',
-        //		params: ['array', 'of', 'parameters'],
-        //		response: 'response channel'
-        // }
-        this._ipcMain.on('async-func-call', (event, arg) => {
-            let result = null, error = null, windowName = arg.target;
-            try {
-                // result = this[arg.func].apply(this, arg.params);
-                if (!windowName) {
-                    // Call app class' method
-                    result = this[arg.func].apply(this, arg.params);
-                }
-                else if (this._windows.has(windowName)) {
-                    // Call method from this specified window
-                    let context = this._windows.get(windowName);
-                    result = context[arg.func].apply(context, arg.params);
-                }
-                else {
-                    throw 'Invalid target';
-                }
-            }
-            catch (ex) {
-                error = ex;
-            }
-            if (!result || (result && !result.then)) {
-                event.sender.send(arg.response, {
-                    result: result,
-                    error: error
-                });
-            }
-            else if (result && result.then) {
-                result
-                    .then(data => {
-                    event.sender.send(arg.response, {
-                        result: data,
-                        error: null
-                    });
-                })
-                    .catch(err => {
-                    event.sender.send(arg.response, {
-                        result: null,
-                        error: err
-                    });
-                });
-            }
-        });
-        this._ipcMain.on('sync-func-call', (event, arg) => {
-            let result = null, error = null, windowName = arg.target;
-            try {
-                if (!windowName) {
-                    // Call app class' method
-                    result = this[arg.func].apply(this, arg.params);
-                }
-                else if (this._windows.has(windowName)) {
-                    // Call method from this specified window
-                    let context = this._windows.get(windowName);
-                    result = context[arg.func].apply(context, arg.params);
-                }
-                else {
-                    throw 'Invalid target';
-                }
-            }
-            catch (ex) {
-                error = ex;
-            }
-            event.returnValue = {
-                result: result,
-                error: error
-            };
-        });
-    }
 }
 exports.ElectronAppBase = ElectronAppBase;
-
-//# sourceMappingURL=ElectronAppBase.js.map

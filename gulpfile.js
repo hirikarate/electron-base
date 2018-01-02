@@ -11,7 +11,7 @@ const
 	remapIstanbul = require('remap-istanbul/lib/gulpRemapIstanbul'),
 	replace = require('gulp-replace'),
 	sequence = require('gulp-watch-sequence'),
-	sourcemaps = require('gulp-sourcemaps'),
+	// sourcemaps = require('gulp-sourcemaps'),
 	through = require("through2"),
 	tsc = require("gulp-typescript"),
 	tsProject = tsc.createProject("tsconfig.json"),
@@ -88,10 +88,10 @@ let compile = function () {
 		.on('error', onError)
 		.on('failed', onError)
 		.pipe(debug())
-		.pipe(development(sourcemaps.init()))
+		// .pipe(development(sourcemaps.init()))
 		.pipe(tsProject(tsc.reporter.fullReporter(true)))
 		.pipe(production(uglify())) // unglif if built in production mode
-		.pipe(development(sourcemaps.write('./')))
+		// .pipe(development(sourcemaps.write('./')))
 		.pipe(gulp.dest(DIST_FOLDER));
 };
 gulp.task('compile', ['tslint'], compile);

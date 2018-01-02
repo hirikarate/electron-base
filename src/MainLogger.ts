@@ -8,7 +8,7 @@ import 'winston-daily-rotate-file';
 
 const DEFAULT_LOCATION = path.join(process.cwd(), 'logs');
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export enum LogLevel { DEBUG = 'debug', INFO = 'info', WARN = 'warn', ERROR = 'error' }
 
 export interface LoggerOptions {
 	/**
@@ -45,28 +45,28 @@ export class MainLogger {
 	 * Writes message to console.
 	 */
 	public info(message: any): Promise<void> {
-		return this.logConsole('info', message);
+		return this.logConsole(LogLevel.INFO, message);
 	}
 
 	/**
 	 * Writes message to console and debug file.
 	 */
 	public debug(message: any): Promise<void> {
-		return this.logDebug('debug', message);
+		return this.logDebug(LogLevel.DEBUG, message);
 	}
 
 	/**
 	 * Writes message to console and error file.
 	 */
 	public warn(message: any): Promise<void> {
-		return this.logError('warn', message);
+		return this.logError(LogLevel.WARN, message);
 	}
 
 	/**
 	 * Writes message to console and error file.
 	 */
 	public error(message: any): Promise<void> {
-		return this.logError('error', message);
+		return this.logError(LogLevel.WARN, message);
 	}
 
 
@@ -85,19 +85,14 @@ export class MainLogger {
 	private logError(level: LogLevel, error: any): Promise<void> {
 		if (!error) { return; }
 
-		let text;
-		if (error.message || error.stack) {
-			text = util.format('%s. Stacktrace: %s', error.message || '', error.stack || '');
-		} else {
-			text = error;
-		}
+		let text = util.format('%s.\nStacktrace: %s', this.errorToString(error), error.stack || '');
 
 		return this.log(level, text, this._errorLogger);
 	}
 
 	private log(level: LogLevel, message: any, logger: winston.LoggerInstance): Promise<void> {
 		return new Promise<void>((resolve, reject) => {
-			logger.log(level, message + '', (err) => {
+			logger.log(level, this.anyToString(message), (err) => {
 				if (err) {
 					reject(err);
 					return;
@@ -152,4 +147,27 @@ export class MainLogger {
 			]
 		});
 	}
+
+	private errorToString(error): string {
+		if ((typeof error) === 'string') { return error; }
+
+		let msg = '';
+		if (error.type) { msg += error.type + '.'; }
+		if (error.name) { msg += error.name + '.'; }
+		if (error.stderr) { msg += error.stderr + '.'; }
+		if (error.message) { msg += error.message + '.'; }
+		if (error.detail) { msg += error.detail + '.'; }
+		if (error.details) { msg += error.details + '.'; }
+
+		if (msg == '') {
+			msg = JSON.stringify(error);
+		}
+
+		return msg;
+	}
+
+	private anyToString(message): string {
+		return ((typeof message) === 'string' ? message : JSON.stringify(message));
+	}
+
 }

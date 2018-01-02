@@ -8,9 +8,20 @@ declare namespace NodeJS {
 		app: any;
 
 		/**
-		 * Absolute path to application root.
+		 * Physical path to application root. Used for file writing.
 		 */
-		appRoot: string;
+		appDiskRoot: string;
+
+		/**
+		 * Logical path to application root. Used for accessing resources bundled by
+		 * electron-builer.
+		 */
+		appCodeRoot: string;
+
+		/**
+		 * Whether app is in debug mode.
+		 */
+		isDebug: boolean;
 
 		/**
 		 * Root URL to access static files. 
@@ -28,19 +39,5 @@ declare namespace NodeJS {
 		 * This property is only available on renderer thread.
 		 */
 		windowName: string;
-
-		/**
-		 * Calls function of the browser window in which this code is loaded.
-		 * If want to call app functions, use `ElectronUtil.callMain`.
-		 * This global function is only available after calling `ElectronUtil.registerGlobalFunctions(global.windowName)`
-		 */
-		callMain(func: string, callback, ...params): void;
-
-		/**
-		 * Calls function of the window in which this code is loaded.
-		 * If want to call app functions, use `ElectronUtil.callMainSync`.
-		 * This global function is only available after calling `ElectronUtil.registerGlobalFunctions(global.windowName)`
-		 */
-		callMainSync(func: string, ...params): { result, error };
 	}
 }

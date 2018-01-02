@@ -2,17 +2,13 @@ import { ipcRenderer, remote } from 'electron';
 
 import { ElectronAppBase } from './ElectronAppBase';
 import { ElectronWindowBase } from './ElectronWindowBase';
-import { MainLogger } from './MainLogger';
 import { RendererLogger } from './RendererLogger';
 
 
-const NOT_AVAIL_ERROR = 'This function is only available on renderer process!',
-	NOT_PROMISE_ERROR = 'This function does not return a Promise!';
-
+const NOT_AVAIL_ERROR = 'This function is only available on renderer process!';
 
 export class RendererUtil {
 
-	private _mainLogger: MainLogger;
 	private _rendererLogger: RendererLogger;
 	private _mainApp: ElectronAppBase;
 	private _parentWindow: ElectronWindowBase;
@@ -53,28 +49,6 @@ export class RendererUtil {
 		return this._parentWindow;
 	}
 
-	/**
-	 * Calls a method from app class, it will run on main process.
-	 * Can only send and receive serialziable JSON objects.
-	 * @param func Function name.
-	 * @param params List of parameters to send to the remote method.
-	 */
-	public callRemoteMain(func: string, ...params): any & Promise<any> {
-		let mainApp = this._mainApp;
-		return mainApp[func].apply(mainApp, params);
-	}
-
-	/**
-	 * Calls a method from parent window, it will run on main process.
-	 * Can only send and receive serialziable JSON objects.
-	 * @param func Function name.
-	 * @param params List of parameters to send to the remote method.
-	 */
-	public callRemoteWindow(func: string, ...params): any & Promise<any> {
-		let parentWindow = this._parentWindow;
-		return parentWindow[func].apply(parentWindow, params);
-	}
-
 
 	private addGlobal(name, value) {
 		if (global[name] !== undefined) { return; }
@@ -92,10 +66,10 @@ export class RendererUtil {
 		this.addGlobal('appRoot', remote.getGlobal('appRoot'));
 		this.addGlobal('webRoot', remote.getGlobal('webRoot'));
 		this.addGlobal('packMode', this._mainApp.options.packMode);
+		this.addGlobal('isDebug', this._mainApp.isDebug);
 		this.addGlobal('windowName', this._parentWindow.name);
 		return this;
 	}
-
 }
 
 // Only export an instance if called on renderer process.

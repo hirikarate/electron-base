@@ -2,6 +2,7 @@ import * as eltr from 'electron';
 import * as path from 'path';
 
 import { ElectronAppBase } from './ElectronAppBase';
+import { CommunicationUtil } from './CommunicationUtil';
 
 
 export interface BrowserWindowConstructorOptions
@@ -85,6 +86,7 @@ export abstract class ElectronWindowBase {
 		this._internalWin = new eltr.BrowserWindow(options);
 		this._internalWin.setTitle(this._name);
 		this.handleEvents();
+		CommunicationUtil.startWindowCommunication(_name, this);
 	}
 
 	/**
