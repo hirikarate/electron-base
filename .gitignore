@@ -1,4 +1,9 @@
 **/node_modules
-/npm-debug.log
+.vscode
+npm-debug.log
 tiny-cdn-cache
 logs
+src
+tsconfig.json
+tslint.json
+gulpfile.js
