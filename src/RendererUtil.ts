@@ -63,7 +63,8 @@ export class RendererUtil {
 	 * Copies global vars from main process to renderer process.
 	 */
 	private shareGlobalVars() {
-		this.addGlobal('appRoot', remote.getGlobal('appRoot'));
+		this.addGlobal('appDiskRoot', remote.getGlobal('appDiskRoot'));
+		this.addGlobal('appCodeRoot', remote.getGlobal('appCodeRoot'));
 		this.addGlobal('webRoot', remote.getGlobal('webRoot'));
 		this.addGlobal('packMode', this._mainApp.options.packMode);
 		this.addGlobal('isDebug', this._mainApp.isDebug);

@@ -317,10 +317,12 @@ class ElectronAppBase {
         }
         Object.defineProperty(global, 'appDiskRoot', {
             value: appDiskRoot,
-            writable: false // Add read-only property
+            configurable: false,
+            writable: false // Read-only property
         });
         Object.defineProperty(global, 'appCodeRoot', {
             value: appCodeRoot,
+            configurable: false,
             writable: false // Add read-only property
         });
         if (this.isDebug) {
@@ -408,6 +410,7 @@ class ElectronAppBase {
                 // Add read-only property
                 Object.defineProperty(global, 'webRoot', {
                     value: `http://${domain}:${port}`,
+                    configurable: false,
                     writable: false
                 });
                 if (this.isDebug) {

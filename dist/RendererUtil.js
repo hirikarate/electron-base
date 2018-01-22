@@ -44,7 +44,8 @@ class RendererUtil {
      * Copies global vars from main process to renderer process.
      */
     shareGlobalVars() {
-        this.addGlobal('appRoot', electron_1.remote.getGlobal('appRoot'));
+        this.addGlobal('appDiskRoot', electron_1.remote.getGlobal('appDiskRoot'));
+        this.addGlobal('appCodeRoot', electron_1.remote.getGlobal('appCodeRoot'));
         this.addGlobal('webRoot', electron_1.remote.getGlobal('webRoot'));
         this.addGlobal('packMode', this._mainApp.options.packMode);
         this.addGlobal('isDebug', this._mainApp.isDebug);
