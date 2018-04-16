@@ -22,6 +22,9 @@ Provides abstract base app class and window class for other Electron app to inhe
 
 ## VERSIONS
 
+### 0.2.4
+- Upgraded to electron@1.7.9
+
 ### 0.2.3
 - Improved logger's stringify feature.
 - Added communication utility.

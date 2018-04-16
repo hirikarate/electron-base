@@ -1,13 +1,13 @@
 {
   "name": "front-lib-electron-base",
   "description": "Provides abstract base app class and window class for other Electron app to inherit.",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "main": "./dist/index.js",
   "types": "./typings/app.d.ts",
   "dependencies": {
-    "electron": "=1.6.11",
+    "electron": "=1.7.9",
     "node-pre-gyp": "~0.6",
-    "shortid": "^2.2.8",
+    "shortid": "~2.2",
     "sync-exec": "~0.6",
     "tiny-cdn": "git+https://github.com/hirikarate/tiny-cdn.git",
     "winston": "~2.3",

@@ -48,6 +48,24 @@ export interface ElectronAppOptions {
 	staticFilePort?: number;
 
 	/**
+	 * Path to serve as static resource, if serveStaticFiles is enabled.
+	 * Default is "process.cwd()".
+	 */
+	staticFileSource?: string;
+
+	/**
+	 * Path to cache pre-processed static resources, if serveStaticFiles is enabled.
+	 * Default is "process.cwd()/assets/tiny-cdn-cache".
+	 */
+	staticFileCache?: string;
+
+	/**
+	 * Prefix of static URL to be redirected to local file server, if serveStaticFiles is enabled.
+	 * Default is "~/";
+	 */
+	staticFileRootPath?: string;
+
+	/**
 	 * Whether to quit application when all windows are closed.
 	 * Default is "true".
 	 */
@@ -94,6 +112,13 @@ export abstract class ElectronAppBase {
 	 */
 	public get viewRoot(): string {
 		return this._viewRoot;
+	}
+
+	/**
+	 * Gets all windows.
+	 */
+	public get windows(): ElectronWindowBase[] {
+		return Array.from(this._windows.values());
 	}
 
 
@@ -520,13 +545,13 @@ export abstract class ElectronAppBase {
 		};
 		win.webContents.session.webRequest.onBeforeRequest(filter, (detail: Electron.OnBeforeRequestDetails, cb: (response: Electron.Response) => void) => {
 			//*
-			const ROOT_PATH = '~/';
+			const rootPath = this._options.staticFileRootPath || '~/';
 			let { url } = detail,
-				pos = url.indexOf(ROOT_PATH),
+				pos = url.indexOf(rootPath),
 				redirectURL = null;
 
 			if (pos >= 0) {
-				url = url.substring(pos + ROOT_PATH.length);
+				url = url.substring(pos + rootPath.length);
 				// Map from "~/" to "localhost/""
 				redirectURL = `${global.webRoot}/${url}`;
 			}
@@ -539,33 +564,33 @@ export abstract class ElectronAppBase {
 	}
 
 	private serveStaticFiles(): Promise<void> {
-		const CACHE_PATH = `${process.cwd()}/assets/tiny-cdn-cache`;
-		let domain = this._options.staticFileDomain || 'localhost',
-			port = this._options.staticFilePort || 30000;
-		
-		if (!fs.existsSync(CACHE_PATH)) {
-			fs.mkdirSync(CACHE_PATH);
+		const opts = this._options,
+			domain = opts.staticFileDomain || 'localhost';
+		const port = opts.staticFilePort || 30000;
+		const source = opts.staticFileSource || process.cwd();
+		const dest = opts.staticFileCache || path.join(source, 'assets', 'tiny-cdn-cache');
+
+		if (!fs.existsSync(dest)) {
+			this.logger.info(`Cache path doesn't exist, create one at: ${dest}`);
+			fs.mkdirSync(dest);
 		}
 
 		return new Promise<void>(resolve => {
-			http.createServer(tinyCdn.create({
-				source: process.cwd(),
-				dest: CACHE_PATH,
-			}))
-			.listen(port, () => {
-				// Add read-only property
-				Object.defineProperty(global, 'webRoot', {
-					value: `http://${domain}:${port}`,
-					configurable: false,
-					writable: false
-				});
+			http.createServer(tinyCdn.create({ source, dest }))
+				.listen(port, () => {
+					// Add read-only property
+					Object.defineProperty(global, 'webRoot', {
+						value: `http://${domain}:${port}`,
+						configurable: false,
+						writable: false
+					});
 
-				if (this.isDebug) {
-					this.logger.debug('webRoot: ' + global.webRoot);
-				}
-				resolve();
-			})
-			.on('error', (err) => this.onError(err));
+					if (this.isDebug) {
+						this.logger.debug('webRoot: ' + global.webRoot);
+					}
+					resolve();
+				})
+				.on('error', (err) => this.onError(err));
 		})
 		.catch(err => {
 			this.onError(err);
