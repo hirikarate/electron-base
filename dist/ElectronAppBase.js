@@ -50,6 +50,12 @@ class ElectronAppBase {
         return this._viewRoot;
     }
     /**
+     * Gets all windows.
+     */
+    get windows() {
+        return Array.from(this._windows.values());
+    }
+    /**
      * Gets Electron application instance.
      */
     get core() {
@@ -382,10 +388,10 @@ class ElectronAppBase {
         };
         win.webContents.session.webRequest.onBeforeRequest(filter, (detail, cb) => {
             //*
-            const ROOT_PATH = '~/';
-            let { url } = detail, pos = url.indexOf(ROOT_PATH), redirectURL = null;
+            const rootPath = this._options.staticFileRootPath || '~/';
+            let { url } = detail, pos = url.indexOf(rootPath), redirectURL = null;
             if (pos >= 0) {
-                url = url.substring(pos + ROOT_PATH.length);
+                url = url.substring(pos + rootPath.length);
                 // Map from "~/" to "localhost/""
                 redirectURL = `${global.webRoot}/${url}`;
             }
@@ -396,16 +402,16 @@ class ElectronAppBase {
         });
     }
     serveStaticFiles() {
-        const CACHE_PATH = `${process.cwd()}/assets/tiny-cdn-cache`;
-        let domain = this._options.staticFileDomain || 'localhost', port = this._options.staticFilePort || 30000;
-        if (!fs.existsSync(CACHE_PATH)) {
-            fs.mkdirSync(CACHE_PATH);
+        const opts = this._options, domain = opts.staticFileDomain || 'localhost';
+        const port = opts.staticFilePort || 30000;
+        const source = opts.staticFileSource || process.cwd();
+        const dest = opts.staticFileCache || path.join(source, 'assets', 'tiny-cdn-cache');
+        if (!fs.existsSync(dest)) {
+            this.logger.info(`Cache path doesn't exist, create one at: ${dest}`);
+            fs.mkdirSync(dest);
         }
         return new Promise(resolve => {
-            http.createServer(tinyCdn.create({
-                source: process.cwd(),
-                dest: CACHE_PATH,
-            }))
+            http.createServer(tinyCdn.create({ source, dest }))
                 .listen(port, () => {
                 // Add read-only property
                 Object.defineProperty(global, 'webRoot', {

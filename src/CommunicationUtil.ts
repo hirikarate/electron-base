@@ -199,7 +199,7 @@ export abstract class CommunicationUtil {
 			let result = null,
 				error = null;
 			try {
-				result = this[arg.func].apply(this, arg.params);
+				result = context[arg.func].apply(context, arg.params);
 			} catch (ex) {
 				error = ex;
 			}

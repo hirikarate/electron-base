@@ -274,6 +274,21 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     */
 	    staticFilePort?: number;
 	    /**
+	     * Path to serve as static resource, if serveStaticFiles is enabled.
+	     * Default is "process.cwd()".
+	     */
+	    staticFileSource?: string;
+	    /**
+	     * Path to cache pre-processed static resources, if serveStaticFiles is enabled.
+	     * Default is "process.cwd()/assets/tiny-cdn-cache".
+	     */
+	    staticFileCache?: string;
+	    /**
+	     * Prefix of static URL to be redirected to local file server, if serveStaticFiles is enabled.
+	     * Default is "~/";
+	     */
+	    staticFileRootPath?: string;
+	    /**
 	     * Whether to quit application when all windows are closed.
 	     * Default is "true".
 	     */
@@ -299,6 +314,10 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	     * Gets absolute path to folder that contains html files.
 	     */
 	    readonly viewRoot: string;
+	    /**
+	     * Gets all windows.
+	     */
+	    readonly windows: ElectronWindowBase[];
 	    /**
 	     * Gets Electron application instance.
 	     */
@@ -436,14 +455,14 @@ declare module 'front-lib-electron-base/CommunicationUtil' {
 	     * @param func Function name.
 	     * @param params List of parameters to send to the remote method.
 	     */
-	    static callAppSync(func: string, ...params: any[]): void;
+	    static callAppSync(func: string, ...params: any[]): any;
 	    /**
 	     * Calls a method from window class and waits for response, it will run on main process.
 	     * Can only send and receive serialziable JSON objects.
 	     * @param func Function name.
 	     * @param params List of parameters to send to the remote method.
 	     */
-	    static callWindowSync(func: string, ...params: any[]): void;
+	    static callWindowSync(func: string, ...params: any[]): any;
 	    /**
 	     * Calls a method from main app class, it will run on main process.
 	     * Can only send and receive serialziable JSON objects.
