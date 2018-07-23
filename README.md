@@ -1,6 +1,6 @@
 # Electron base library
 
-Provides abstract base app class and window class for other Electron app to inherit.
+Provides abstract classes for main app and window for other Electron app to inherit.
 
 ## INSTALLATION
 

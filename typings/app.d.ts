@@ -1,8 +1,8 @@
 /// <reference path="./global.d.ts" />
 
-declare module 'front-lib-electron-base/ElectronWindowBase' {
+declare module 'electron-base/dist/ElectronWindowBase' {
 	/// <reference types="electron" />
-	import { ElectronAppBase } from 'front-lib-electron-base/ElectronAppBase';
+	import { ElectronAppBase } from 'electron-base/dist/ElectronAppBase';
 	export interface BrowserWindowConstructorOptions extends Electron.BrowserWindowConstructorOptions {
 	    /**
 	     * Whether to trigger global close action.
@@ -194,7 +194,7 @@ declare module 'front-lib-electron-base/ElectronWindowBase' {
 	    	}
 
 }
-declare module 'front-lib-electron-base/MainLogger' {
+declare module 'electron-base/dist/MainLogger' {
 	import 'winston-daily-rotate-file';
 	export enum LogLevel {
 	    DEBUG = "debug",
@@ -238,10 +238,10 @@ declare module 'front-lib-electron-base/MainLogger' {
 	    	    	    	    	    	    	    	}
 
 }
-declare module 'front-lib-electron-base/ElectronAppBase' {
+declare module 'electron-base/dist/ElectronAppBase' {
 	/// <reference types="electron" />
-	import { ElectronWindowBase } from 'front-lib-electron-base/ElectronWindowBase';
-	import { MainLogger } from 'front-lib-electron-base/MainLogger';
+	import { ElectronWindowBase } from 'electron-base/dist/ElectronWindowBase';
+	import { MainLogger } from 'electron-base/dist/MainLogger';
 	export type ElectronAppLogLevel = 'debug' | 'info' | 'warn' | 'error';
 	export interface ElectronAppOptions {
 	    /**
@@ -412,8 +412,8 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	    	    	    	    	    	    	    	}
 
 }
-declare module 'front-lib-electron-base/RendererLogger' {
-	import { MainLogger } from 'front-lib-electron-base/MainLogger';
+declare module 'electron-base/dist/RendererLogger' {
+	import { MainLogger } from 'electron-base/dist/MainLogger';
 	/**
 	 * Logger for renderer process, writes debug logs to browser console,
 	 * and delegates error logs to main logger to write to files.
@@ -443,7 +443,7 @@ declare module 'front-lib-electron-base/RendererLogger' {
 	    	}
 
 }
-declare module 'front-lib-electron-base/CommunicationUtil' {
+declare module 'electron-base/dist/CommunicationUtil' {
 	/// <reference types="electron" />
 	export abstract class CommunicationUtil {
 	    	    /**
@@ -512,10 +512,10 @@ declare module 'front-lib-electron-base/CommunicationUtil' {
 	    	    	    	}
 
 }
-declare module 'front-lib-electron-base/RendererUtil' {
-	import { ElectronAppBase } from 'front-lib-electron-base/ElectronAppBase';
-	import { ElectronWindowBase } from 'front-lib-electron-base/ElectronWindowBase';
-	import { RendererLogger } from 'front-lib-electron-base/RendererLogger';
+declare module 'electron-base/dist/RendererUtil' {
+	import { ElectronAppBase } from 'electron-base/dist/ElectronAppBase';
+	import { ElectronWindowBase } from 'electron-base/dist/ElectronWindowBase';
+	import { RendererLogger } from 'electron-base/dist/RendererLogger';
 	export class RendererUtil {
 	    	    	    	    constructor();
 	    readonly logger: RendererLogger;
@@ -534,10 +534,10 @@ declare module 'front-lib-electron-base/RendererUtil' {
 	export const rendererUtil: RendererUtil;
 
 }
-declare module 'front-lib-electron-base' {
-	export * from 'front-lib-electron-base/CommunicationUtil';
-	export * from 'front-lib-electron-base/ElectronAppBase';
-	export { rendererUtil } from 'front-lib-electron-base/RendererUtil';
-	export * from 'front-lib-electron-base/ElectronWindowBase';
+declare module 'electron-base' {
+	export * from 'electron-base/dist/CommunicationUtil';
+	export * from 'electron-base/dist/ElectronAppBase';
+	export { rendererUtil } from 'electron-base/dist/RendererUtil';
+	export * from 'electron-base/dist/ElectronWindowBase';
 
 }
