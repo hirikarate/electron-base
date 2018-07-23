@@ -1,6 +1,9 @@
 
 ## VERSIONS
 
+### 1.0.1
+- Fixed error in app.d.ts.
+
 ### 1.0.0
 - Upgraded to electron@1.8.7
 - Added a guide in README.md to rebuild Node native module.

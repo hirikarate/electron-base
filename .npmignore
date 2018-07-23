@@ -5,6 +5,7 @@ src
 .editorconfig
 .gitignore
 CHANGELOG.md
+gulpfile.js
 tsconfig.json
 tslint.json
 **/*.log
