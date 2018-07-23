@@ -30,14 +30,11 @@ class ElectronWindowBase {
         return this._name;
     }
     /**
-     * Gets parent app of this window.
+     * Gets or sets parent app of this window.
      */
     get app() {
         return this._app;
     }
-    /**
-     * Sets parent app of this window.
-     */
     set app(app) {
         this._app = app;
     }

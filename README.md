@@ -4,13 +4,11 @@ Provides abstract base app class and window class for other Electron app to inhe
 
 ## INSTALLATION
 
-1. Install `node-gyp` globally: `npm install --global node-gyp`
-
 1. Install `node-pre-gyp` globally: `npm install --global node-pre-gyp`
 
 1. Install `windows-build-tools` globally: `npm install --global --production windows-build-tools`
 
-## DEVELOP
+## DEVELOPMENT
 
 1. `npm install`
 
@@ -20,51 +18,9 @@ Provides abstract base app class and window class for other Electron app to inhe
 
 * `gulp release`
 
-## VERSIONS
+* How to rebuild Node native module for this Electron version: 
+   - Navigate to module folder. E.g: `cd ./node_modules/sqlite3`
+   - `node-pre-gyp rebuild --target=1.8.7 --arch=x64 --dist-url=https://atom.io/download/atom-shell`
+   - If build fails, try changing the target to `1.8.6`, or `1.8.5`, etc. But keep it in range `1.8.x`.
 
-### 0.2.4
-- Upgraded to electron@1.7.9
-
-### 0.2.3
-- Improved logger's stringify feature.
-- Added communication utility.
-- Replaced `global.appRoot` with `appDiskRoot` and `appCodeRoot`.
-
-### 0.2.2
-
-- Added `dedup` task to `gulpfile.js`.
-- Updated dependencies' version.
-
-### 0.2.1
-
-- **RendererUtil**: Removed deprecated functions
-- **RendererLogger**: Fixed a bug when passing renderer error to main app.
-
-### 0.2.0
-
-- **RendererUtil**: Do not allow creating new instance. Must use singleton with `import { rendererUtil } from 'front-lib-electron-base';`
-- **MainLogger**: Logger used by main process to write messages to system console and file (including stacktrace). Cannot create new instance, must use with `this.logger` (inside main app class) and `rendererUtil.mainApp.logger` (inside renderer process).
-- **RendererLogger**: Logger used by renderer process to write messages to browser console, but also can write errors to file. Cannot create new instance, must use with `rendererUtil.logger`.
-- **ElectronWindowBase**:
-    * Fixed the bug where modal dialog appears as a standalone window.
-	* Provides some delegated methods from native BrowserWindow class.
-	* Provides methods to open different types of dialogs.
-- Do not need to edit `app.d.ts` file manually anymore. Everything is automatic when `gulp release`.
-- Added `packMode` to `ElectronAppOptions` and `global`.
-- Use a custom `tiny-cdn` repo to make it work with Webpack.
-
-### 0.1.1
-
-- Use `__dirname` instead of `process.cwd()` in some places to better support electron-builder and webpack internal reference mechanism.
-- Main app class exposes `onError` as public method for other classes to report errors.
-- **RendererUtil**:
-    * Uses `remote` to call functions in main process.
-	* Deprecated IPC methods.
-
-### 0.1.0
-
-- **ElectronAppBase**: Supports embeded static file server, logging and several events.
-- **ElectronWindowBase**: Supports common events
-- **RendererUtil**: 
-  - Supports calling functions from main app class and parent window, allows send/receive complex JS objects.
-  - [Deprecated] Supports inter-process communication (IPC) functions for renderer processes to call main process's methods. Only allows send/receive serializable JSON objects.
+* Equivalent Node version: `v8.2.1`

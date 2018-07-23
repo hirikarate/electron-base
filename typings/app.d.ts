@@ -23,10 +23,7 @@ declare module 'front-lib-electron-base/ElectronWindowBase' {
 	     */
 	    readonly name: string;
 	    /**
-	     * Gets parent app of this window.
-	     */
-	    /**
-	     * Sets parent app of this window.
+	     * Gets or sets parent app of this window.
 	     */
 	    app: ElectronAppBase;
 	    /**
@@ -203,7 +200,7 @@ declare module 'front-lib-electron-base/MainLogger' {
 	    DEBUG = "debug",
 	    INFO = "info",
 	    WARN = "warn",
-	    ERROR = "error",
+	    ERROR = "error"
 	}
 	export interface LoggerOptions {
 	    /**
@@ -331,7 +328,7 @@ declare module 'front-lib-electron-base/ElectronAppBase' {
 	    */
 	    protected readonly ipcMain: Electron.IpcMain;
 	    constructor(_options?: ElectronAppOptions);
-	    readonly abstract isDebug: boolean;
+	    abstract readonly isDebug: boolean;
 	    /**
 	     * Starts application
 	     */

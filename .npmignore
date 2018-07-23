@@ -1,0 +1,12 @@
+.nyc_output
+.vscode
+coverage
+dist/test
+dist/**/*.map
+src
+.editorconfig
+.gitignore
+CHANGELOG.md
+tsconfig.json
+tslint.json
+**/*.log

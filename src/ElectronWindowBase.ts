@@ -38,15 +38,12 @@ export abstract class ElectronWindowBase {
 	}
 
 	/**
-	 * Gets parent app of this window.
+	 * Gets or sets parent app of this window.
 	 */
 	public get app(): ElectronAppBase {
 		return this._app;
 	}
 
-	/**
-	 * Sets parent app of this window.
-	 */
 	public set app(app: ElectronAppBase) {
 		this._app = app;
 	}
