@@ -37,7 +37,7 @@ class RendererUtil {
         }
         Object.defineProperty(global, name, {
             value: value,
-            writable: false // Add read-only property
+            writable: false,
         });
     }
     /**
@@ -58,3 +58,4 @@ exports.RendererUtil = RendererUtil;
 exports.rendererUtil = (electron_1.ipcRenderer != null
     ? new RendererUtil()['shareGlobalVars']() // Intentionally call private method
     : null);
+//# sourceMappingURL=RendererUtil.js.map

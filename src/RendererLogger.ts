@@ -1,6 +1,4 @@
-import * as util from 'util';
-
-import { MainLogger } from './MainLogger';
+import { MainLogger } from './MainLogger'
 
 
 /**
@@ -17,7 +15,7 @@ export class RendererLogger {
 	 * @param message A string, support %s (string), %i (number).
 	 */
 	public info(message: any): void {
-		console.info(message);
+		console.info(message)
 	}
 
 	/**
@@ -25,7 +23,7 @@ export class RendererLogger {
 	 * @param message A string, support %s (string), %i (number).
 	 */
 	public debug(message: any): void {
-		console.debug(message);
+		console.debug(message)
 	}
 
 	/**
@@ -33,7 +31,7 @@ export class RendererLogger {
 	 * @param message A string, support %s (string), %i (number).
 	 */
 	public warn(message: any): void {
-		console.warn(message);
+		console.warn(message)
 	}
 
 	/**
@@ -41,27 +39,27 @@ export class RendererLogger {
 	 * @param error A string, support %s (string), %i (number).
 	 */
 	public error(error: any): void {
-		console.error(error);
-		error = { message: this.errorToString(error), stack: error.stack || '' };
-		this._mainLogger.error(error);
+		console.error(error)
+		error = { message: this.errorToString(error), stack: error.stack || '' }
+		this._mainLogger.error(error)
 	}
 
 
-	private errorToString(error): string {
-		if ((typeof error) === 'string') { return error; }
+	private errorToString(error: any): string {
+		if ((typeof error) === 'string') { return error }
 
-		let msg = '';
-		if (error.type) { msg += error.type + '.'; }
-		if (error.name) { msg += error.name + '.'; }
-		if (error.stderr) { msg += error.stderr + '.'; }
-		if (error.message) { msg += error.message + '.'; }
-		if (error.detail) { msg += error.detail + '.'; }
-		if (error.details) { msg += error.details + '.'; }
+		let msg = ''
+		if (error.type) { msg += error.type + '.' }
+		if (error.name) { msg += error.name + '.' }
+		if (error.stderr) { msg += error.stderr + '.' }
+		if (error.message) { msg += error.message + '.' }
+		if (error.detail) { msg += error.detail + '.' }
+		if (error.details) { msg += error.details + '.' }
 
 		if (msg == '') {
-			msg = JSON.stringify(error);
+			msg = JSON.stringify(error)
 		}
 
-		return msg;
+		return msg
 	}
 }

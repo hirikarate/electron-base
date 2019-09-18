@@ -1,18 +1,18 @@
-import * as eltr from 'electron';
-import { EventEmitter } from 'events';
-import * as fs from 'fs';
-import * as http from 'http';
-import * as path from 'path';
+import * as eltr from 'electron'
+import { EventEmitter } from 'events'
+import * as fs from 'fs'
+import * as http from 'http'
+import * as path from 'path'
 
-import * as execSyncToBuffer from 'sync-exec';
-const tinyCdn = require('tiny-cdn');
+import { execSync } from 'child_process'
+const tinyCdn = require('tiny-cdn')
 
-import { ElectronWindowBase } from './ElectronWindowBase';
-import { MainLogger } from './MainLogger';
-import { CommunicationUtil } from './CommunicationUtil';
+import { ElectronWindowBase } from './ElectronWindowBase'
+import { MainLogger } from './MainLogger'
+import { CommunicationUtil } from './CommunicationUtil'
 
 
-export type ElectronAppLogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type ElectronAppLogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 export interface ElectronAppOptions {
 
@@ -21,104 +21,104 @@ export interface ElectronAppOptions {
 	 * This option is often used with `quitWhenAllWindowsClosed=true`.
 	 * Default is "false".
 	 */
-	globalClose?: boolean;
+	globalClose?: boolean
 
 	/**
 	 * Path to the folder where log files are created.
 	 * Default is "{appRoot}/logs".
 	 */
-	logDirPath?: string;
+	logDirPath?: string
 
 	/**
 	 * Whether to server static files (css, jpg,...) via a embeded server.
 	 * Default is "true".
 	 */
-	serveStaticFiles?: boolean;
+	serveStaticFiles?: boolean
 
 	/**
 	 * Domain name for file server, if serveStaticFiles is enabled.
 	 * Default is "localhost".
 	 */
-	staticFileDomain?: string;
+	staticFileDomain?: string
 
 	/**
 	 * Port for file server, if serveStaticFiles is enabled.
 	 * Default is "30000".
 	 */
-	staticFilePort?: number;
+	staticFilePort?: number
 
 	/**
 	 * Path to serve as static resource, if serveStaticFiles is enabled.
 	 * Default is "process.cwd()".
 	 */
-	staticFileSource?: string;
+	staticFileSource?: string
 
 	/**
 	 * Path to cache pre-processed static resources, if serveStaticFiles is enabled.
 	 * Default is "process.cwd()/assets/tiny-cdn-cache".
 	 */
-	staticFileCache?: string;
+	staticFileCache?: string
 
 	/**
 	 * Prefix of static URL to be redirected to local file server, if serveStaticFiles is enabled.
 	 * Default is "~/";
 	 */
-	staticFileRootPath?: string;
+	staticFileRootPath?: string
 
 	/**
 	 * Whether to quit application when all windows are closed.
 	 * Default is "true".
 	 */
-	quitWhenAllWindowsClosed?: boolean;
+	quitWhenAllWindowsClosed?: boolean
 
 	/**
 	 * Whether this code is packed in .asar archive.
 	 */
-	packMode?: boolean;
+	packMode?: boolean
 }
 
 enum AppStatus { NotReady, Ready, Started }
 
 export abstract class ElectronAppBase {
 
-	protected readonly _windows: Map<string, ElectronWindowBase>;
-	protected readonly _quitHandlers: ((force: boolean) => Promise<boolean>)[];
-	protected _viewRoot: string;
+	protected readonly _windows: Map<string, ElectronWindowBase>
+	protected readonly _quitHandlers: ((force: boolean) => Promise<boolean>)[]
+	protected _viewRoot: string
 
-	private readonly _core: Electron.App;
-	private readonly _ipcMain: Electron.IpcMain;
-	private readonly _logger: MainLogger;
-	private _event: EventEmitter;
-	private _isClosingAll: boolean;
-	private _status: AppStatus;
+	private readonly _core: Electron.App
+	private readonly _ipcMain: Electron.IpcMain
+	private readonly _logger: MainLogger
+	private _event: EventEmitter
+	private _isClosingAll: boolean
+	private _status: AppStatus
 
 
 	/**
 	 * Gets logger.
 	 */
 	public get logger(): MainLogger {
-		return this._logger;
+		return this._logger
 	}
 
 	/**
 	 * Gets application settings.
 	 */
 	public get options(): ElectronAppOptions {
-		return this._options;
+		return this._options
 	}
 
 	/**
 	 * Gets absolute path to folder that contains html files.
 	 */
 	public get viewRoot(): string {
-		return this._viewRoot;
+		return this._viewRoot
 	}
 
 	/**
 	 * Gets all windows.
 	 */
 	public get windows(): ElectronWindowBase[] {
-		return Array.from(this._windows.values());
+		return Array.from(this._windows.values())
 	}
 
 
@@ -126,42 +126,42 @@ export abstract class ElectronAppBase {
 	 * Gets Electron application instance.
 	 */
 	protected get core(): Electron.App {
-		return this._core;
+		return this._core
 	}
 
 	/**
 	 * Gets Electron dialog instance.
 	 */
 	protected get dialog(): Electron.Dialog {
-		return eltr.dialog;
+		return eltr.dialog
 	}
 
-	/** 
+	/**
 	 * Gets IPC of main process.
 	*/
 	protected get ipcMain(): Electron.IpcMain {
-		return this._ipcMain;
+		return this._ipcMain
 	}
 
 
 	constructor(private _options: ElectronAppOptions = {}) {
 
-		this.initOptions(_options);
-		this._logger = this.createLogger();
+		this.initOptions(_options)
+		this._logger = this.createLogger()
 
-		this.initAppRoot();
+		this.initAppRoot()
 
-		this._core = eltr.app;
-		this._ipcMain = eltr.ipcMain;
-		this._windows = new Map<string, ElectronWindowBase>();
+		this._core = eltr.app
+		this._ipcMain = eltr.ipcMain
+		this._windows = new Map<string, ElectronWindowBase>()
 
-		this._event = new EventEmitter();
-		this._quitHandlers = [];
-		this._isClosingAll = false;
-		this._viewRoot = `${global.appCodeRoot}/views/`;
-		this._status = AppStatus.NotReady;
+		this._event = new EventEmitter()
+		this._quitHandlers = []
+		this._isClosingAll = false
+		this._viewRoot = `${global.appCodeRoot}/views/`
+		this._status = AppStatus.NotReady
 
-		global.app = this;
+		global.app = this
 	}
 
 	public abstract get isDebug(): boolean;
@@ -171,47 +171,47 @@ export abstract class ElectronAppBase {
 	 */
 	public start(): void {
 		if (this.isDebug) {
-			this.logger.debug('App is starting!');
+			this.logger.debug('App is starting!')
 		}
-		this.onStarting();
+		this.onStarting()
 
-		this.handleEvents();
+		this.handleEvents()
 
 		let startPromise = new Promise<void>(resolve => {
 			// Only use this when your VGA is blacklisted by Chrome. Check chrome://gpu to know.
-			this._core.commandLine.appendSwitch('ignore-gpu-blacklist', 'true');
-			CommunicationUtil.startAppCommunication(this);
-			resolve();
-		});
+			this._core.commandLine.appendSwitch('ignore-gpu-blacklist', 'true')
+			CommunicationUtil.startAppCommunication(this)
+			resolve()
+		})
 
 		if (this._options.serveStaticFiles) {
-			startPromise = startPromise.then(() => this.serveStaticFiles());
+			startPromise = startPromise.then(() => this.serveStaticFiles())
 		}
 
-		startPromise = startPromise.catch(err => this.onError(err));
+		startPromise = startPromise.catch(err => this.onError(err))
 
-		let onAppReady = () => {
+		const onAppReady = () => {
 			startPromise.then(() => {
-				this._status = AppStatus.Started;
+				this._status = AppStatus.Started
 				if (this.isDebug) {
-					this.logger.debug('Calling onStarted event...');
+					this.logger.debug('Calling onStarted event...')
 				}
 
-				this.onStarted();
+				this.onStarted()
 
 				if (this.isDebug) {
-					this.logger.debug('App has started!');
+					this.logger.debug('App has started!')
 				}
 
-				startPromise = null;
-				this._event = null;
-			});
-		};
+				startPromise = null
+				this._event = null
+			})
+		}
 
-		this._event.once('app-ready', onAppReady);
+		this._event.once('app-ready', onAppReady)
 
 		if (this._status == AppStatus.Ready) {
-			onAppReady.apply(this);
+			onAppReady.apply(this)
 		}
 	}
 
@@ -223,65 +223,67 @@ export abstract class ElectronAppBase {
 	 */
 	public quit(force: boolean = false): Promise<boolean> {
 		if (this.isDebug) {
-			this.logger.debug('App is attempting to exit!');
+			this.logger.debug('App is attempting to exit!')
 		}
 
 		if (!this._quitHandlers.length) {
 			if (this.isDebug) {
-				this.logger.debug('App now exits with no quit handlers!');
+				this.logger.debug('App now exits with no quit handlers!')
 			}
-			this._core.quit();
-			return Promise.resolve(true);
+			this._core.quit()
+			return Promise.resolve(true)
 		}
 
-		let handlerPromises = this._quitHandlers.map(handler => handler(force));
-		
+		const handlerPromises = this._quitHandlers.map(handler => handler(force))
+
 
 		return Promise.all(handlerPromises).then(results => {
 			// If at least one of the results is "false", cancel quit process.
-			let cancel = results.reduce((prev, r) => !r && prev, true);
-			
+			const cancel = results.reduce((prev, r) => !r && prev, true)
+
 			// If the app is forced to quit, or if nobody prevents it from quitting.
 			if (force || !cancel) {
 				if (this.isDebug) {
-					this.logger.debug('App now exits! Force: ' + force);
+					this.logger.debug('App now exits! Force: ' + force)
 				}
 
-				this._core.quit();
-				return true;
+				this._core.quit()
+				return true
 			}
 
 			if (this.isDebug) {
-				this.logger.debug('App quit is cancelled');
+				this.logger.debug('App quit is cancelled')
 			}
-			return false;
-		});
+			return false
+		})
 	}
 
 	/**
 	 * Stores this window reference and adds neccessary events to manage it.
 	 */
 	public addWindow<T extends ElectronWindowBase>(window: T): T {
-		window.app = this;
-		this._windows.set(window.name, window);
+		window.app = this
+		this._windows.set(window.name, window)
 
-		let native = window.native;
-		native['name'] = window.name;
-		native.webContents.on('did-start-loading', () => this.processEmbededServerUrl(native));
+		const native = window.native
+		native['name'] = window.name
+		if (this._options.serveStaticFiles) {
+			native.webContents.on('did-start-loading', () => this.processEmbededServerUrl(native))
+		}
 
 		native.on('closed', () => {
-			this._windows.delete(window.name);
-			
-			if (!window.triggerGlobalClose) { return; }
-			this.tryCloseAllWindows();
-		});
+			this._windows.delete(window.name)
 
-		window.start();
-		return window;
+			if (!window.triggerGlobalClose) { return }
+			this.tryCloseAllWindows()
+		})
+
+		window.start()
+		return window
 	}
 
 	public findWindow(name: string): ElectronWindowBase {
-		return this._windows.get(name);
+		return this._windows.get(name)
 	}
 
 	/**
@@ -290,10 +292,10 @@ export abstract class ElectronAppBase {
 	 */
 	public reload(name?: string): void {
 		if (name && this._windows.has(name)) {
-			this._windows.get(name).reload();
-			return;
+			this._windows.get(name).reload()
+			return
 		}
-		this._windows.forEach(win => win.reload());
+		this._windows.forEach(win => win.reload())
 	}
 
 	/**
@@ -302,10 +304,10 @@ export abstract class ElectronAppBase {
 	 */
 	public goFullScreen(name?: string): void {
 		if (name && this._windows.has(name)) {
-			this._windows.get(name).setFullScreen(true);
-			return;
+			this._windows.get(name).native.setFullScreen(true)
+			return
 		}
-		this._windows.forEach(win => win.setFullScreen(true));
+		this._windows.forEach(win => win.native.setFullScreen(true))
 	}
 
 	/**
@@ -314,18 +316,16 @@ export abstract class ElectronAppBase {
 	 */
 	public addQuitListener(handler: (force: boolean) => Promise<boolean>): void {
 		if (!handler || !(typeof handler == 'function')) {
-			throw 'Handler is not a function!';
+			throw new Error('Handler is not a function!')
 		}
-		this._quitHandlers.push(handler);
+		this._quitHandlers.push(handler)
 	}
 
 	/**
 	 * Clears HTTP cache.
 	 */
 	public clearCache(): Promise<void> {
-		return new Promise<void>((resolve) => {
-			eltr.session.defaultSession.clearCache(resolve);
-		});
+		return eltr.session.defaultSession.clearCache()
 	}
 
 	/**
@@ -333,7 +333,7 @@ export abstract class ElectronAppBase {
 	 */
 	public clearStorage(): Promise<void> {
 		return new Promise<void>((resolve) => {
-			let options = {
+			const options = {
 				storages: [
 					'appcache',
 					'cookies',
@@ -349,45 +349,45 @@ export abstract class ElectronAppBase {
 					'persistent',
 					'syncable',
 				],
-				origin: '*'
-			};
+				origin: '*',
+			}
 
-			eltr.session.defaultSession.clearStorageData(options, resolve);
-		});
+			eltr.session.defaultSession.clearStorageData(options, resolve)
+		})
 	}
 
 	/**
 	 * Gets all display screens available on this machine.
 	 */
 	public getAllDisplays(): Electron.Display[] {
-		return eltr.screen.getAllDisplays();
+		return eltr.screen.getAllDisplays()
 	}
 
-	
+
 	/**
-	 * Gets the 2nd display screen (if any) on this machine. 
+	 * Gets the 2nd display screen (if any) on this machine.
 	 * If you want to get more displays, use `getAllDisplays`.
 	 * @return A display object, or null if there is only one display available.
 	 */
 	public getSecondDisplay(): Electron.Display {
-		let displays = this.getAllDisplays(),
-			externalDisplay = null;
+		const displays = this.getAllDisplays()
+		let externalDisplay = null
 
-		for (let i in displays) {
+		for (const i in displays) {
 			if (displays[i].bounds.x != 0 || displays[i].bounds.y != 0) {
-			externalDisplay = displays[i];
-			break;
+			externalDisplay = displays[i]
+			break
 			}
 		}
 
-		return externalDisplay;
+		return externalDisplay
 	}
 
 	/**
 	 * Adds a listener to call when an error occurs.
 	 */
 	public onError(message: any): void {
-		this._logger.error(message);
+		this._logger.error(message)
 	}
 
 	/**
@@ -397,92 +397,91 @@ export abstract class ElectronAppBase {
 	 * the message will be emitted to stderr, and no GUI dialog will appear.
 	 */
 	public showErrorBox(title: string, content: string): void {
-		eltr.dialog.showErrorBox(title, content);
+		eltr.dialog.showErrorBox(title, content)
 	}
 
 
 	/**
 	 * Executes an OS command.
 	 */
-	protected execCmd(command: string, options?): string {
-		options = options || {};
+	protected execCmd(command: string, options: any = {}): any {
+		options = Object.assign({
+			cwd: global.appDiskRoot,
+			stdio: 'inherit',
+		}, options)
 
-		let results = execSyncToBuffer(command, options);
-
-		if (!results.status) {
-			return results.stdout;
-		}
-
-		throw {
-			stderr: results.stderr
-		};
+		return execSync(command, options)
 	}
 
 	/**
 	 * Occurs after application window is focused by user.
 	 */
 	protected onActivated(): void {
+		// Stub
 	}
 
 	/**
 	 * Occurs after all windows have been closed.
 	 */
 	protected onAllWindowsClosed(): void {
+		// Stub
 	}
 
 	/**
 	 * Occurs before application creates any windows.
 	 */
 	protected onStarting(): void {
+		// Stub
 	}
 
 	/**
 	 * Occurs after application has created all windows.
 	 */
 	protected onStarted(): void {
+		// Stub
 	}
 
 
 	private createLogger(): MainLogger {
-		let dirPath = this._options.logDirPath,
+		const dirPath = this._options.logDirPath,
 			loggerOpts = dirPath
 				? {
 					debugDirPath: dirPath,
 					errorDirPath: dirPath,
 				}
-				: null;
+				: null
 
-		return new MainLogger(loggerOpts);
+		return new MainLogger(loggerOpts)
 	}
 
 	private initAppRoot(): void {
 		let appDiskRoot: string,
-			appCodeRoot: string;
+			appCodeRoot: string
 
-		appCodeRoot = appDiskRoot = process.cwd();
+		appCodeRoot = appDiskRoot = process.cwd()
 		if (this._options.packMode) {
-			appCodeRoot = path.join(process.cwd(), 'resources', 'app.asar');
+			appCodeRoot = path.join(process.cwd(), 'resources', 'app.asar')
 
 			if (this.isDebug) {
-				this.logger.debug('packMode is ON');
+				this.logger.debug('packMode is ON')
 			}
 		}
 
 		Object.defineProperty(global, 'appDiskRoot', {
 			value: appDiskRoot,
 			configurable: false, // Cannot delete this property
-			writable: false // Read-only property
-		});
+			writable: false, // Read-only property
+		})
 
 		Object.defineProperty(global, 'appCodeRoot', {
 			value: appCodeRoot,
 			configurable: false, // Cannot delete this property
-			writable: false // Add read-only property
-		});
+			writable: false, // Add read-only property
+		})
 
 		if (this.isDebug) {
-			this.logger.debug('appDiskRoot: ' + global.appDiskRoot);
-			this.logger.debug('appCodeRoot: ' + global.appCodeRoot);
+			this.logger.debug('appDiskRoot: ' + global.appDiskRoot)
+			this.logger.debug('appCodeRoot: ' + global.appCodeRoot)
 		}
 	}
 
@@ -494,46 +493,46 @@ export abstract class ElectronAppBase {
 			serveStaticFiles: true,
 			staticFileDomain: 'localhost',
 			staticFilePort: 30000,
-			packMode: false
-		};
+			packMode: false,
+		}
 
-		return this._options = Object.assign(DEFAULT_OPTS, options);
+		return this._options = Object.assign(DEFAULT_OPTS, options)
 	}
 
 	private tryCloseAllWindows(): void {
-		if (!this._options.globalClose || this._isClosingAll) { return; }
+		if (!this._options.globalClose || this._isClosingAll) { return }
 
 		// Turn on flag to prevent this method from being called multiple times by other window's 'closed' event.
-		this._isClosingAll = true;
-		
+		this._isClosingAll = true
+
 		this._windows.forEach((win: ElectronWindowBase) => {
-			win.close();
-			this._windows.delete(win.name);
-		});
+			win.close()
+			this._windows.delete(win.name)
+		})
 	}
 
 	private handleEvents(): void {
-		let app = this._core;
-		
+		const app = this._core
+
 		// This method will be called when Electron has finished
 		// initialization and is ready to create browser windows.
 		// Some APIs can only be used after this event occurs.
 		app.on('ready', () => {
-			this._status = AppStatus.Ready;
-			this._event.emit('app-ready');
-		});
+			this._status = AppStatus.Ready
+			this._event.emit('app-ready')
+		})
 
 		// Quit when all windows are closed.
 		app.on('window-all-closed', () => {
-			this.onAllWindowsClosed();
+			this.onAllWindowsClosed()
 			if (this._options.quitWhenAllWindowsClosed) {
-				this.quit();
+				this.quit()
 			}
-		});
+		})
 
 		app.on('activate', () => {
-			this.onActivated();
-		});
+			this.onActivated()
+		})
 	}
 
 	private processEmbededServerUrl(win: Electron.BrowserWindow): void {
@@ -541,38 +540,41 @@ export abstract class ElectronAppBase {
 		 * Transform resource file URLs
 		 */
 		const filter = {
-			urls: []
-		};
-		win.webContents.session.webRequest.onBeforeRequest(filter, (detail: Electron.OnBeforeRequestDetails, cb: (response: Electron.Response) => void) => {
-			//*
-			const rootPath = this._options.staticFileRootPath || '~/';
+			urls: [] as string[],
+		}
+		win.webContents.session.webRequest.onBeforeRequest(
+				filter,
+				(detail: Electron.OnBeforeRequestDetails,
+				cb: (response: Electron.Response) => void) => {
+			// *
+			const rootPath = this._options.staticFileRootPath || '~/'
 			let { url } = detail,
-				pos = url.indexOf(rootPath),
-				redirectURL = null;
+				redirectURL = null
+			const pos = url.indexOf(rootPath)
 
 			if (pos >= 0) {
-				url = url.substring(pos + rootPath.length);
+				url = url.substring(pos + rootPath.length)
 				// Map from "~/" to "localhost/""
-				redirectURL = `${global.webRoot}/${url}`;
+				redirectURL = `${global.webRoot}/${url}`
 			}
-			//*/
+			// */
 			// this.log('debug', 'Old URL: ' + url);
 			// this.log('debug', 'New URL: ' + redirectURL);
 
-			cb({ redirectURL });
-		});
+			cb({ redirectURL })
+		})
 	}
 
 	private serveStaticFiles(): Promise<void> {
 		const opts = this._options,
-			domain = opts.staticFileDomain || 'localhost';
-		const port = opts.staticFilePort || 30000;
-		const source = opts.staticFileSource || process.cwd();
-		const dest = opts.staticFileCache || path.join(source, 'assets', 'tiny-cdn-cache');
+			domain = opts.staticFileDomain || 'localhost'
+		const port = opts.staticFilePort || 30000
+		const source = opts.staticFileSource || process.cwd()
+		const dest = opts.staticFileCache || path.join(source, 'assets', 'tiny-cdn-cache')
 
 		if (!fs.existsSync(dest)) {
-			this.logger.info(`Cache path doesn't exist, create one at: ${dest}`);
-			fs.mkdirSync(dest);
+			this.logger.info(`Cache path doesn't exist, create one at: ${dest}`)
+			fs.mkdirSync(dest)
 		}
 
 		return new Promise<void>(resolve => {
@@ -582,19 +584,19 @@ export abstract class ElectronAppBase {
 					Object.defineProperty(global, 'webRoot', {
 						value: `http://${domain}:${port}`,
 						configurable: false,
-						writable: false
-					});
+						writable: false,
+					})
 
 					if (this.isDebug) {
-						this.logger.debug('webRoot: ' + global.webRoot);
+						this.logger.debug('webRoot: ' + global.webRoot)
 					}
-					resolve();
+					resolve()
 				})
-				.on('error', (err) => this.onError(err));
+				.on('error', (err) => this.onError(err))
 		})
 		.catch(err => {
-			this.onError(err);
-			process.exit();
-		});
+			this.onError(err)
+			process.exit()
+		})
 	}
 }

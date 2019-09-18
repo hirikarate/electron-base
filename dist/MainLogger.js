@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const util = require("util");
 const winston = require("winston");
-require("winston-daily-rotate-file");
+const DailyRotateFile = require("winston-daily-rotate-file");
 const DEFAULT_LOCATION = path.join(process.cwd(), 'logs');
 var LogLevel;
 (function (LogLevel) {
@@ -50,22 +50,13 @@ class MainLogger {
         return this.logError(LogLevel.WARN, message);
     }
     logConsole(level, message) {
-        if (!message) {
-            return;
-        }
         return this.log(level, message, this._infoLogger);
     }
     logDebug(level, message) {
-        if (!message) {
-            return;
-        }
         return this.log(level, message, this._debugLogger);
     }
     logError(level, error) {
-        if (!error) {
-            return;
-        }
-        let text = util.format('%s.\nStacktrace: %s', this.errorToString(error), error.stack || '');
+        const text = util.format('%s.\nStacktrace: %s', this.errorToString(error), error.stack || '');
         return this.log(level, text, this._errorLogger);
     }
     log(level, message, logger) {
@@ -80,44 +71,44 @@ class MainLogger {
         });
     }
     init() {
-        this._infoLogger = new winston.Logger({
+        this._infoLogger = winston.createLogger({
             transports: [
                 new (winston.transports.Console)({
-                    level: 'info'
-                })
-            ]
+                    level: 'info',
+                }),
+            ],
         });
-        let debugDir = this._options.debugDirPath;
+        const debugDir = this._options.debugDirPath;
         if (!fs.existsSync(debugDir)) {
             fs.mkdirSync(debugDir);
         }
-        this._debugLogger = new winston.Logger({
+        this._debugLogger = winston.createLogger({
             transports: [
                 new (winston.transports.Console)({
-                    level: 'debug'
+                    level: 'debug',
                 }),
-                new (winston.transports.DailyRotateFile)({
+                new DailyRotateFile({
                     filename: path.join(debugDir, 'debug'),
                     datePattern: '-yyyy-MM-dd.log',
-                    level: 'debug'
-                })
-            ]
+                    level: 'debug',
+                }),
+            ],
         });
-        let errorDir = this._options.errorDirPath;
+        const errorDir = this._options.errorDirPath;
         if (!fs.existsSync(errorDir)) {
             fs.mkdirSync(errorDir);
         }
-        this._errorLogger = new winston.Logger({
+        this._errorLogger = winston.createLogger({
             transports: [
                 new (winston.transports.Console)({
-                    level: 'warn'
+                    level: 'warn',
                 }),
-                new (winston.transports.DailyRotateFile)({
+                new DailyRotateFile({
                     filename: path.join(errorDir, 'error'),
                     datePattern: '-yyyy-MM-dd.log',
-                    level: 'warn'
-                })
-            ]
+                    level: 'warn',
+                }),
+            ],
         });
     }
     errorToString(error) {
@@ -153,3 +144,4 @@ class MainLogger {
     }
 }
 exports.MainLogger = MainLogger;
+//# sourceMappingURL=MainLogger.js.map

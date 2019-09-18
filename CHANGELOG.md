@@ -1,6 +1,9 @@
 
 ## VERSIONS
 
+### 1.1.0
+- `electron` is peer dependency now.
+
 ### 1.0.1
 - Fixed error in app.d.ts.
 

@@ -1,12 +1,12 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as util from 'util';
+import * as fs from 'fs'
+import * as path from 'path'
+import * as util from 'util'
 
-import * as winston from 'winston';
-import 'winston-daily-rotate-file';
+import * as winston from 'winston'
+import DailyRotateFile = require('winston-daily-rotate-file')
 
 
-const DEFAULT_LOCATION = path.join(process.cwd(), 'logs');
+const DEFAULT_LOCATION = path.join(process.cwd(), 'logs')
 
 export enum LogLevel { DEBUG = 'debug', INFO = 'info', WARN = 'warn', ERROR = 'error' }
 
@@ -15,13 +15,13 @@ export interface LoggerOptions {
 	 * Path to directory in which debug file is created.
 	 * Default is: {appRoot}/logs/debug.log
 	 */
-	debugDirPath?: string;
+	debugDirPath?: string
 
 	/**
 	 * Path to directory in which error file is created.
 	 * Default is: {appRoot}/logs/error.log
 	 */
-	errorDirPath?: string;
+	errorDirPath?: string
 }
 
 /**
@@ -29,145 +29,139 @@ export interface LoggerOptions {
  */
 export class MainLogger {
 
-	private _infoLogger: winston.LoggerInstance;
-	private _debugLogger: winston.LoggerInstance;
-	private _errorLogger: winston.LoggerInstance;
+	private _infoLogger: winston.Logger
+	private _debugLogger: winston.Logger
+	private _errorLogger: winston.Logger
 
 	constructor(private _options: LoggerOptions = {}) {
 		this._options = Object.assign(<LoggerOptions>{
 			debugDirPath: DEFAULT_LOCATION,
 			errorDirPath: DEFAULT_LOCATION,
-		}, this._options);
-		this.init();
+		}, this._options)
+		this.init()
 	}
 
 	/**
 	 * Writes message to console.
 	 */
 	public info(message: any): Promise<void> {
-		return this.logConsole(LogLevel.INFO, message);
+		return this.logConsole(LogLevel.INFO, message)
 	}
 
 	/**
 	 * Writes message to console and debug file.
 	 */
 	public debug(message: any): Promise<void> {
-		return this.logDebug(LogLevel.DEBUG, message);
+		return this.logDebug(LogLevel.DEBUG, message)
 	}
 
 	/**
 	 * Writes message to console and error file.
 	 */
 	public warn(message: any): Promise<void> {
-		return this.logError(LogLevel.WARN, message);
+		return this.logError(LogLevel.WARN, message)
 	}
 
 	/**
 	 * Writes message to console and error file.
 	 */
 	public error(message: any): Promise<void> {
-		return this.logError(LogLevel.WARN, message);
+		return this.logError(LogLevel.WARN, message)
 	}
 
 
 	private logConsole(level: LogLevel, message: any): Promise<void> {
-		if (!message) { return; }
-		
-		return this.log(level, message, this._infoLogger);
+		return this.log(level, message, this._infoLogger)
 	}
 
 	private logDebug(level: LogLevel, message: any): Promise<void> {
-		if (!message) { return; }
-		
-		return this.log(level, message, this._debugLogger);
+		return this.log(level, message, this._debugLogger)
 	}
 
 	private logError(level: LogLevel, error: any): Promise<void> {
-		if (!error) { return; }
+		const text = util.format('%s.\nStacktrace: %s', this.errorToString(error), error.stack || '')
 
-		let text = util.format('%s.\nStacktrace: %s', this.errorToString(error), error.stack || '');
-
-		return this.log(level, text, this._errorLogger);
+		return this.log(level, text, this._errorLogger)
 	}
 
-	private log(level: LogLevel, message: any, logger: winston.LoggerInstance): Promise<void> {
+	private log(level: LogLevel, message: any, logger: winston.Logger): Promise<void> {
 		return new Promise<void>((resolve, reject) => {
 			logger.log(level, this.anyToString(message), (err) => {
 				if (err) {
-					reject(err);
-					return;
+					reject(err)
+					return
 				}
-				resolve();
-			});
-		});
+				resolve()
+			})
+		})
 	}
 
 	private init(): void {
-		this._infoLogger = new winston.Logger({
+		this._infoLogger = winston.createLogger({
 			transports: [
 				new (winston.transports.Console)({
-					level: 'info'
-				})
-			]
-		});
+					level: 'info',
+				}),
+			],
+		})
 
-		let debugDir = this._options.debugDirPath;
+		const debugDir = this._options.debugDirPath
 		if (!fs.existsSync(debugDir)) {
-			fs.mkdirSync(debugDir);
+			fs.mkdirSync(debugDir)
 		}
 
-		this._debugLogger = new winston.Logger({
+		this._debugLogger = winston.createLogger({
 			transports: [
 				new (winston.transports.Console)({
-					level: 'debug'
+					level: 'debug',
 				}),
-				new (winston.transports.DailyRotateFile)({
+				new DailyRotateFile({
 					filename: path.join(debugDir, 'debug'),
 					datePattern: '-yyyy-MM-dd.log',
-					level: 'debug'
-				})
-			]
-		});
+					level: 'debug',
+				}),
+			],
+		})
 
-		let errorDir = this._options.errorDirPath;
+		const errorDir = this._options.errorDirPath
 		if (!fs.existsSync(errorDir)) {
-			fs.mkdirSync(errorDir);
+			fs.mkdirSync(errorDir)
 		}
 
-		this._errorLogger = new winston.Logger({
+		this._errorLogger = winston.createLogger({
 			transports: [
 				new (winston.transports.Console)({
-					level: 'warn'
+					level: 'warn',
 				}),
-				new (winston.transports.DailyRotateFile)({
+				new DailyRotateFile({
 					filename: path.join(errorDir, 'error'),
 					datePattern: '-yyyy-MM-dd.log',
-					level: 'warn'
-				})
-			]
-		});
+					level: 'warn',
+				}),
+			],
+		})
 	}
 
-	private errorToString(error): string {
-		if ((typeof error) === 'string') { return error; }
+	private errorToString(error: any): string {
+		if ((typeof error) === 'string') { return error }
 
-		let msg = '';
-		if (error.type) { msg += error.type + '.'; }
-		if (error.name) { msg += error.name + '.'; }
-		if (error.stderr) { msg += error.stderr + '.'; }
-		if (error.message) { msg += error.message + '.'; }
-		if (error.detail) { msg += error.detail + '.'; }
-		if (error.details) { msg += error.details + '.'; }
+		let msg = ''
+		if (error.type) { msg += error.type + '.' }
+		if (error.name) { msg += error.name + '.' }
+		if (error.stderr) { msg += error.stderr + '.' }
+		if (error.message) { msg += error.message + '.' }
+		if (error.detail) { msg += error.detail + '.' }
+		if (error.details) { msg += error.details + '.' }
 
 		if (msg == '') {
-			msg = JSON.stringify(error);
+			msg = JSON.stringify(error)
 		}
 
-		return msg;
+		return msg
 	}
 
-	private anyToString(message): string {
-		return ((typeof message) === 'string' ? message : JSON.stringify(message));
+	private anyToString(message: any): string {
+		return ((typeof message) === 'string' ? message : JSON.stringify(message))
 	}
 
 }

@@ -16,7 +16,7 @@ class ElectronWindowBase {
     constructor(_name, _options) {
         this._name = _name;
         this._options = _options;
-        let options = this._options;
+        const options = this._options;
         this._triggerGlobalClose = (options == null || options.triggerGlobalClose == null || options.triggerGlobalClose === true);
         this._internalWin = new eltr.BrowserWindow(options);
         this._internalWin.setTitle(this._name);
@@ -61,16 +61,14 @@ class ElectronWindowBase {
      * Clears HTTP cache.
      */
     clearCache() {
-        return new Promise((resolve) => {
-            this._internalWin.webContents.session.clearCache(resolve);
-        });
+        return this._internalWin.webContents.session.clearCache();
     }
     /**
      * Clears all types of storage, not including HTTP cache.
      */
     clearStorage() {
         return new Promise((resolve) => {
-            let options = {
+            const options = {
                 storages: [
                     'appcache',
                     'cookies',
@@ -86,7 +84,7 @@ class ElectronWindowBase {
                     'persistent',
                     'syncable',
                 ],
-                origin: '*'
+                origin: '*',
             };
             eltr.session.defaultSession.clearStorageData(options, resolve);
         });
@@ -168,7 +166,7 @@ class ElectronWindowBase {
             title,
             detail,
             type: 'info',
-            noLink: true
+            noLink: true,
         }).then((answer) => {
             return;
         });
@@ -186,7 +184,7 @@ class ElectronWindowBase {
             defaultId: 1,
             cancelId: 1,
             type: 'warning',
-            noLink: true
+            noLink: true,
         }).then((answer) => {
             return (answer == 0);
         });
@@ -226,9 +224,7 @@ class ElectronWindowBase {
      * @return A promise to resolve to the selected path, and to null if user cancels the dialog.
      */
     showSaveDialog(options) {
-        return new Promise((resolve, reject) => {
-            eltr.dialog.showSaveDialog(this.native, options, resolve);
-        });
+        return eltr.dialog.showSaveDialog(this.native, options);
     }
     /**
      * Shows a message dialog.
@@ -237,21 +233,7 @@ class ElectronWindowBase {
      * 	`checkboxChecked` tells whether user selects the checkbox (if visible)
      */
     showMessageBox(options) {
-        return new Promise((resolve, reject) => {
-            eltr.dialog.showMessageBox(this.native, options, resolve);
-        });
-    }
-    /**
-     * Unmaximizes the window.
-     */
-    unmaximize() {
-        this.native.unmaximize();
-    }
-    /**
-     * Sets whether the window should be in fullscreen mode.
-     */
-    setFullScreen(flag) {
-        this.native.setFullScreen(flag);
+        return eltr.dialog.showMessageBox(this.native, options);
     }
     /**
      * Builds and gets absolute path from specified file path.
@@ -265,7 +247,7 @@ class ElectronWindowBase {
      * @param filePath Relative path to .html file.
      */
     loadView(filePath, options) {
-        let resource = 'file://' + this.getView(filePath);
+        const resource = 'file://' + this.getView(filePath);
         this._internalWin.loadURL(resource);
     }
     /**
@@ -274,6 +256,7 @@ class ElectronWindowBase {
      * Calling event.preventDefault() will cancel the close.
      */
     onClosing(event) {
+        // Stub
     }
     /**
      * Occurs after the window has been closed.
@@ -281,48 +264,56 @@ class ElectronWindowBase {
      * the reference to the window and avoid using it any more.
      */
     onClosed() {
+        // Stub
     }
     /**
      * Occurs when the window loses focus.
      */
     onBlur() {
+        // Stub
     }
     /**
      * Occurs when the window gains focus.
      */
     onFocus() {
+        // Stub
     }
     /**
      * Occurs when the web page has been rendered
      * (while not being shown) and window can be displayed without a visual flash.
      */
     onShowing() {
+        // Stub
     }
     /**
      * Occurs after the window has been shown.
      */
     onShown() {
+        // Stub
     }
     /**
      * Occurs when the spinner of the tab started spinning.
      */
     onContentLoading() {
+        // Stub
     }
     /**
      * Occurs when the navigation is done, i.e. the spinner of the tab has stopped
      * spinning, and the onload event was dispatched.
      */
     onContentLoaded() {
+        // Stub
     }
     /**
      * Occurs when the document in the given frame is loaded.
      */
     onContentDomReady(event) {
+        // Stub
     }
     handleEvents() {
         // Don't pass in a function like this: `this.on('close', this.onClosing.bind(this));`
         // Because `onClosing` can be overriden by children class.
-        let win = this._internalWin;
+        const win = this._internalWin;
         win.on('close', (event) => this.onClosing(event));
         win.on('closed', () => this.onClosed());
         win.on('blur', () => this.onBlur());
@@ -335,3 +326,4 @@ class ElectronWindowBase {
     }
 }
 exports.ElectronWindowBase = ElectronWindowBase;
+//# sourceMappingURL=ElectronWindowBase.js.map

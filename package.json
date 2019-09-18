@@ -1,21 +1,27 @@
 {
 	"name": "electron-base",
+	"version": "1.1.0",
 	"description": "Provides abstract classes for main app and window for other Electron app to inherit.",
-	"version": "1.0.1",
+	"scripts": {
+		"clean": "rimraf dist",
+		"compile": "npm run clean && npm run lint && tsc --pretty",
+		"dedup": "rimraf node_modules/**/node_modules/**/typings",
+		"definition": "node scripts/definition.js",
+		"release": "npm run compile && npm run definition",
+		"lint": "tslint --fix 'src/**/*.ts'",
+		"watch": "npm run clean && npm run lint && tsc --watch --pretty",
+		"prepublishOnly": "npm run release"
+	},
 	"dependencies": {
-		"electron": "=1.8.7",
-		"node-pre-gyp": "~0.6",
+		"electron": "~6.0",
 		"shortid": "~2.2",
 		"sync-exec": "~0.6",
 		"tiny-cdn": "git+https://github.com/hirikarate/tiny-cdn.git",
-		"winston": "~2.3",
-		"winston-daily-rotate-file": "~1.4"
+		"winston": "~3.2",
+		"winston-daily-rotate-file": "~4.1"
 	},
-	"devDependencies": {
-		"@types/node": "^8",
-		"@types/winston": "~2.3",
+	"peerDependencies": {
 		"del": "~3.0",
-		"dts-generator": "~2.1",
 		"gulp": "~3.9",
 		"gulp-cached": "~1.1",
 		"gulp-clean": "~0.3",
@@ -38,9 +44,18 @@
 		"gulp-watch-sequence": "~1.0",
 		"merge-stream": "~1.0",
 		"remap-istanbul": "~0.9",
-		"through2": "~2.0",
+		"through2": "~2.0"
+	},
+	"devDependencies": {
+		"@types/node": "^12",
+		"@types/shortid": "^0.0.29",
+		"@types/winston": "~2.4",
+		"chalk": "^2.4.2",
+		"fs-extra": "^8.1.0",
+		"rimraf": "~2.6",
+		"ts-declarator": "~1.0",
 		"tslint": "~5.5",
-		"typescript": "~2.9"
+		"typescript": "~3.6"
 	},
 	"publishConfig": {
 		"access": "public"
@@ -50,7 +65,7 @@
 		"url": "https://github.com/hirikarate"
 	},
 	"engines": {
-		"node": "^8"
+		"node": ">=12"
 	},
 	"license": "MIT",
 	"private": false,

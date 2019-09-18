@@ -5,7 +5,7 @@ const events_1 = require("events");
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
-const execSyncToBuffer = require("sync-exec");
+const child_process_1 = require("child_process");
 const tinyCdn = require('tiny-cdn');
 const MainLogger_1 = require("./MainLogger");
 const CommunicationUtil_1 = require("./CommunicationUtil");
@@ -92,7 +92,7 @@ class ElectronAppBase {
             startPromise = startPromise.then(() => this.serveStaticFiles());
         }
         startPromise = startPromise.catch(err => this.onError(err));
-        let onAppReady = () => {
+        const onAppReady = () => {
             startPromise.then(() => {
                 this._status = AppStatus.Started;
                 if (this.isDebug) {
@@ -128,10 +128,10 @@ class ElectronAppBase {
             this._core.quit();
             return Promise.resolve(true);
         }
-        let handlerPromises = this._quitHandlers.map(handler => handler(force));
+        const handlerPromises = this._quitHandlers.map(handler => handler(force));
         return Promise.all(handlerPromises).then(results => {
             // If at least one of the results is "false", cancel quit process.
-            let cancel = results.reduce((prev, r) => !r && prev, true);
+            const cancel = results.reduce((prev, r) => !r && prev, true);
             // If the app is forced to quit, or if nobody prevents it from quitting.
             if (force || !cancel) {
                 if (this.isDebug) {
@@ -152,9 +152,11 @@ class ElectronAppBase {
     addWindow(window) {
         window.app = this;
         this._windows.set(window.name, window);
-        let native = window.native;
+        const native = window.native;
         native['name'] = window.name;
-        native.webContents.on('did-start-loading', () => this.processEmbededServerUrl(native));
+        if (this._options.serveStaticFiles) {
+            native.webContents.on('did-start-loading', () => this.processEmbededServerUrl(native));
+        }
         native.on('closed', () => {
             this._windows.delete(window.name);
             if (!window.triggerGlobalClose) {
@@ -185,10 +187,10 @@ class ElectronAppBase {
      */
     goFullScreen(name) {
         if (name && this._windows.has(name)) {
-            this._windows.get(name).setFullScreen(true);
+            this._windows.get(name).native.setFullScreen(true);
             return;
         }
-        this._windows.forEach(win => win.setFullScreen(true));
+        this._windows.forEach(win => win.native.setFullScreen(true));
     }
     /**
      * Adds a listener to call before quit.
@@ -196,7 +198,7 @@ class ElectronAppBase {
      */
     addQuitListener(handler) {
         if (!handler || !(typeof handler == 'function')) {
-            throw 'Handler is not a function!';
+            throw new Error('Handler is not a function!');
         }
         this._quitHandlers.push(handler);
     }
@@ -204,16 +206,14 @@ class ElectronAppBase {
      * Clears HTTP cache.
      */
     clearCache() {
-        return new Promise((resolve) => {
-            eltr.session.defaultSession.clearCache(resolve);
-        });
+        return eltr.session.defaultSession.clearCache();
     }
     /**
      * Clears all types of storage, not including HTTP cache.
      */
     clearStorage() {
         return new Promise((resolve) => {
-            let options = {
+            const options = {
                 storages: [
                     'appcache',
                     'cookies',
@@ -229,7 +229,7 @@ class ElectronAppBase {
                     'persistent',
                     'syncable',
                 ],
-                origin: '*'
+                origin: '*',
             };
             eltr.session.defaultSession.clearStorageData(options, resolve);
         });
@@ -246,8 +246,9 @@ class ElectronAppBase {
      * @return A display object, or null if there is only one display available.
      */
     getSecondDisplay() {
-        let displays = this.getAllDisplays(), externalDisplay = null;
-        for (let i in displays) {
+        const displays = this.getAllDisplays();
+        let externalDisplay = null;
+        for (const i in displays) {
             if (displays[i].bounds.x != 0 || displays[i].bounds.y != 0) {
                 externalDisplay = displays[i];
                 break;
@@ -273,38 +274,39 @@ class ElectronAppBase {
     /**
      * Executes an OS command.
      */
-    execCmd(command, options) {
-        options = options || {};
-        let results = execSyncToBuffer(command, options);
-        if (!results.status) {
-            return results.stdout;
-        }
-        throw {
-            stderr: results.stderr
-        };
+    execCmd(command, options = {}) {
+        options = Object.assign({
+            cwd: global.appDiskRoot,
+            stdio: 'inherit',
+        }, options);
+        return child_process_1.execSync(command, options);
     }
     /**
      * Occurs after application window is focused by user.
      */
     onActivated() {
+        // Stub
     }
     /**
      * Occurs after all windows have been closed.
      */
     onAllWindowsClosed() {
+        // Stub
     }
     /**
      * Occurs before application creates any windows.
      */
     onStarting() {
+        // Stub
     }
     /**
      * Occurs after application has created all windows.
      */
     onStarted() {
+        // Stub
     }
     createLogger() {
-        let dirPath = this._options.logDirPath, loggerOpts = dirPath
+        const dirPath = this._options.logDirPath, loggerOpts = dirPath
             ? {
                 debugDirPath: dirPath,
                 errorDirPath: dirPath,
@@ -324,12 +326,12 @@ class ElectronAppBase {
         Object.defineProperty(global, 'appDiskRoot', {
             value: appDiskRoot,
             configurable: false,
-            writable: false // Read-only property
+            writable: false,
         });
         Object.defineProperty(global, 'appCodeRoot', {
             value: appCodeRoot,
             configurable: false,
-            writable: false // Add read-only property
+            writable: false,
         });
         if (this.isDebug) {
             this.logger.debug('appDiskRoot: ' + global.appDiskRoot);
@@ -344,7 +346,7 @@ class ElectronAppBase {
             serveStaticFiles: true,
             staticFileDomain: 'localhost',
             staticFilePort: 30000,
-            packMode: false
+            packMode: false,
         };
         return this._options = Object.assign(DEFAULT_OPTS, options);
     }
@@ -360,7 +362,7 @@ class ElectronAppBase {
         });
     }
     handleEvents() {
-        let app = this._core;
+        const app = this._core;
         // This method will be called when Electron has finished
         // initialization and is ready to create browser windows.
         // Some APIs can only be used after this event occurs.
@@ -384,18 +386,19 @@ class ElectronAppBase {
          * Transform resource file URLs
          */
         const filter = {
-            urls: []
+            urls: [],
         };
         win.webContents.session.webRequest.onBeforeRequest(filter, (detail, cb) => {
-            //*
+            // *
             const rootPath = this._options.staticFileRootPath || '~/';
-            let { url } = detail, pos = url.indexOf(rootPath), redirectURL = null;
+            let { url } = detail, redirectURL = null;
+            const pos = url.indexOf(rootPath);
             if (pos >= 0) {
                 url = url.substring(pos + rootPath.length);
                 // Map from "~/" to "localhost/""
                 redirectURL = `${global.webRoot}/${url}`;
             }
-            //*/
+            // */
             // this.log('debug', 'Old URL: ' + url);
             // this.log('debug', 'New URL: ' + redirectURL);
             cb({ redirectURL });
@@ -417,7 +420,7 @@ class ElectronAppBase {
                 Object.defineProperty(global, 'webRoot', {
                     value: `http://${domain}:${port}`,
                     configurable: false,
-                    writable: false
+                    writable: false,
                 });
                 if (this.isDebug) {
                     this.logger.debug('webRoot: ' + global.webRoot);
@@ -433,3 +436,4 @@ class ElectronAppBase {
     }
 }
 exports.ElectronAppBase = ElectronAppBase;
+//# sourceMappingURL=ElectronAppBase.js.map

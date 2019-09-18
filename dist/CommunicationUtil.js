@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const shortid = require("shortid");
-const NOT_RENDERER_ERROR = 'This function is only available on renderer process!', NOT_MAIN_ERROR = 'This function is only available on main process!', NOT_PROMISE_ERROR = 'This function does not return a Promise!';
+const NOT_RENDERER_ERROR = 'This function is only available on renderer process!', NOT_MAIN_ERROR = 'This function is only available on main process!';
 class CommunicationUtil {
     constructor() { }
     /**
@@ -24,7 +24,7 @@ class CommunicationUtil {
     static callWindowSync(func, ...params) {
         this.assertRenderer();
         const { rendererUtil } = require('./RendererUtil');
-        let parentName = rendererUtil.parentWindow.name;
+        const parentName = rendererUtil.parentWindow.name;
         return electron_1.ipcRenderer.sendSync('sync-func-call-' + parentName, { func, params });
     }
     /**
@@ -46,7 +46,7 @@ class CommunicationUtil {
     static callWindow(func, ...params) {
         this.assertRenderer();
         const { rendererUtil } = require('./RendererUtil');
-        let parentName = rendererUtil.parentWindow.name;
+        const parentName = rendererUtil.parentWindow.name;
         return this.callRemoteMain(parentName, func, ...params);
     }
     /**
@@ -58,13 +58,13 @@ class CommunicationUtil {
     static callRenderer(browserWindow, func, ...params) {
         this.assertMain();
         return new Promise((resolve, reject) => {
-            let responseTo = shortid.generate();
+            const responseTo = shortid.generate();
             electron_1.ipcMain['_callQueue'] = electron_1.ipcMain['_callQueue'] || {};
             electron_1.ipcMain['_callQueue'][responseTo] = { resolve, reject };
             browserWindow.webContents.send('renderer-func-call', {
                 func,
                 params,
-                responseTo
+                responseTo,
             });
         });
     }
@@ -76,9 +76,9 @@ class CommunicationUtil {
         this.assertRenderer();
         // Allow renderer process to call a function in main process
         // arg = {
-        // 		func: 'function name',
-        //		params: ['array', 'of', 'parameters'],
-        //		responseTo: <shortid token>
+        //    func: 'function name',
+        //    params: ['array', 'of', 'parameters'],
+        //    responseTo: <shortid token>
         // }
         electron_1.ipcRenderer.on('renderer-func-call', (event, arg) => {
             let result = null, error = null;
@@ -92,23 +92,23 @@ class CommunicationUtil {
                 event.sender.send('renderer-func-response', {
                     result: result,
                     error: !!error ? error + '' : null,
-                    responseTo: arg.responseTo
+                    responseTo: arg.responseTo,
                 });
             }
             else if (result && result.then) {
                 result
-                    .then(data => {
+                    .then((data) => {
                     event.sender.send('renderer-func-response', {
                         result: data,
                         error: null,
-                        responseTo: arg.responseTo
+                        responseTo: arg.responseTo,
                     });
                 })
                     .catch((err) => {
                     event.sender.send('renderer-func-response', {
                         result: null,
                         error: err + '',
-                        responseTo: arg.responseTo
+                        responseTo: arg.responseTo,
                     });
                 });
             }
@@ -138,9 +138,9 @@ class CommunicationUtil {
         this.assertMain();
         // Allow renderer process to call a function in main process
         // arg = {
-        // 		func: 'function name',
-        //		params: ['array', 'of', 'parameters'],
-        //		responseTo: 'response channel'
+        //    func: 'function name',
+        //    params: ['array', 'of', 'parameters'],
+        //    responseTo: 'response channel'
         // }
         electron_1.ipcMain.on('async-func-call-' + id, (event, arg) => {
             let result = null, error = null;
@@ -158,16 +158,16 @@ class CommunicationUtil {
             }
             else if (result && result.then) {
                 result
-                    .then(data => {
+                    .then((data) => {
                     event.sender.send(arg.responseTo, {
                         result: data,
-                        error: null
+                        error: null,
                     });
                 })
-                    .catch(err => {
+                    .catch((err) => {
                     event.sender.send(arg.responseTo, {
                         result: null,
-                        error: err
+                        error: err,
                     });
                     console.error(err);
                 });
@@ -183,13 +183,13 @@ class CommunicationUtil {
             }
             event.returnValue = {
                 result: result,
-                error: error
+                error: error,
             };
         });
-        let rendererListener = electron_1.ipcMain.listeners('renderer-func-response');
+        const rendererListener = electron_1.ipcMain.listeners('renderer-func-response');
         if (!rendererListener || !rendererListener.length) {
             electron_1.ipcMain.on('renderer-func-response', (event, arg) => {
-                let queue = electron_1.ipcMain['_callQueue'] || {}, promise = queue[arg.responseTo];
+                const queue = electron_1.ipcMain['_callQueue'] || {}, promise = queue[arg.responseTo];
                 if (!promise) {
                     return;
                 }
@@ -210,7 +210,7 @@ class CommunicationUtil {
      */
     static callRemoteMain(targetId, func, ...params) {
         return new Promise((resolve, reject) => {
-            let responseTo = func + '-response';
+            const responseTo = func + '-response';
             electron_1.ipcRenderer.once(responseTo, (event, arg) => {
                 if (arg.error) {
                     return reject(arg.error);
@@ -220,7 +220,7 @@ class CommunicationUtil {
             electron_1.ipcRenderer.send('async-func-call-' + targetId, {
                 func,
                 params,
-                responseTo
+                responseTo,
             });
         });
     }
@@ -236,3 +236,4 @@ class CommunicationUtil {
     }
 }
 exports.CommunicationUtil = CommunicationUtil;
+//# sourceMappingURL=CommunicationUtil.js.map
