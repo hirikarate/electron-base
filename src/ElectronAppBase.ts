@@ -173,6 +173,14 @@ export abstract class ElectronAppBase {
 		if (this.isDebug) {
 			this.logger.debug('App is starting!')
 		}
+		process
+			.on('unhandledRejection', (reason, p) => {
+				this.onError(reason)
+			})
+			.on('uncaughtException', err => {
+				this.onError(err)
+			})
+
 		this.onStarting()
 
 		this.handleEvents()

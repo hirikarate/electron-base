@@ -41,6 +41,7 @@ export class RendererLogger {
 	public error(error: any): void {
 		console.error(error)
 		error = { message: this.errorToString(error), stack: error.stack || '' }
+		// TODO: Support renderer with nodeIntegration: false
 		this._mainLogger.error(error)
 	}
 

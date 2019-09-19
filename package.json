@@ -13,7 +13,6 @@
 		"prepublishOnly": "npm run release"
 	},
 	"dependencies": {
-		"electron": "~6.0",
 		"shortid": "~2.2",
 		"sync-exec": "~0.6",
 		"tiny-cdn": "git+https://github.com/hirikarate/tiny-cdn.git",
@@ -21,30 +20,7 @@
 		"winston-daily-rotate-file": "~4.1"
 	},
 	"peerDependencies": {
-		"del": "~3.0",
-		"gulp": "~3.9",
-		"gulp-cached": "~1.1",
-		"gulp-clean": "~0.3",
-		"gulp-concat": "~2.6",
-		"gulp-debug": "~3.1",
-		"gulp-environments": "~0.1",
-		"gulp-footer": "~1.0",
-		"gulp-header": "~1.8",
-		"gulp-istanbul": "~1.1",
-		"gulp-mocha": "~3.0",
-		"gulp-rename": "~1.2",
-		"gulp-replace": "~0.6",
-		"gulp-sass": "~3.1",
-		"gulp-sourcemaps": "~2.6",
-		"gulp-tslint": "~8.1",
-		"gulp-typescript": "~3.2",
-		"gulp-uglify": "~2.0",
-		"gulp-uglifycss": "~1.0",
-		"gulp-watch": "~4.3",
-		"gulp-watch-sequence": "~1.0",
-		"merge-stream": "~1.0",
-		"remap-istanbul": "~0.9",
-		"through2": "~2.0"
+		"electron": ">=5.0"
 	},
 	"devDependencies": {
 		"@types/node": "^12",
@@ -65,7 +41,7 @@
 		"url": "https://github.com/hirikarate"
 	},
 	"engines": {
-		"node": ">=12"
+		"node": ">=10"
 	},
 	"license": "MIT",
 	"private": false,

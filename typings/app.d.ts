@@ -1,7 +1,75 @@
 /// <reference path="./global.d.ts" />
-
-declare module 'electron-base/dist/ElectronWindowBase' {
+declare module 'electron-base/dist/CommunicationUtil' {
 	/// <reference types="electron" />
+	export abstract class CommunicationUtil {
+	    	    /**
+	     * Calls a method from main app class and waits for response, it will run on main process.
+	     * Can only send and receive serialziable JSON objects.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    static callAppSync(func: string, ...params: any[]): any;
+	    /**
+	     * Calls a method from window class and waits for response, it will run on main process.
+	     * Can only send and receive serialziable JSON objects.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    static callWindowSync(func: string, ...params: any[]): any;
+	    /**
+	     * Calls a method from main app class, it will run on main process.
+	     * Can only send and receive serialziable JSON objects.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    static callApp(func: string, ...params: any[]): Promise<any>;
+	    /**
+	     * Calls a method from window class, it will run on main process.
+	     * Can only send and receive serialziable JSON objects.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    static callWindow(func: string, ...params: any[]): Promise<any>;
+	    /**
+	     * Calls a method from renderer process, it will run on renderern process.
+	     * Can only send and receive serialziable JSON objects.
+	     * @param browserWindow Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    static callRenderer(browserWindow: Electron.BrowserWindow, func: string, ...params: any[]): Promise<any>;
+	    /**
+	     * Accepts incoming request to execute functions.
+	     * @param context The object to call functions from.
+	     */
+	    static startRendererCommunication(context: any): void;
+	    /**
+	     * Accepts incoming request to main app class.
+	     * @param context The object to call functions from.
+	     */
+	    static startAppCommunication(context: any): void;
+	    /**
+	     * Accepts incoming request to main app class.
+	     * @param windowName The window name.
+	     * @param context The object to call functions from.
+	     */
+	    static startWindowCommunication(windowName: string, context: any): void;
+	    /**
+	     * Accepts incoming request to execute functions.
+	     * @param id An unique identification string to send ipc message to.
+	     * @param context The object to call functions from.
+	     */
+	    	    /**
+	     * Calls a method from main process, it will run on main process.
+	     * Can only send and receive serialziable JSON objects.
+	     * @param targetId The `id` param when the target calls `startIpcCommunication`.
+	     * @param func Function name.
+	     * @param params List of parameters to send to the remote method.
+	     */
+	    	    	    	}
+
+}
+declare module 'electron-base/dist/ElectronWindowBase' {
+	import * as eltr from 'electron';
 	import { ElectronAppBase } from 'electron-base/dist/ElectronAppBase';
 	export interface BrowserWindowConstructorOptions extends Electron.BrowserWindowConstructorOptions {
 	    /**
@@ -120,25 +188,14 @@ declare module 'electron-base/dist/ElectronWindowBase' {
 	     * Shows a dialog to select a file to save.
 	     * @return A promise to resolve to the selected path, and to null if user cancels the dialog.
 	     */
-	    showSaveDialog(options?: Electron.SaveDialogOptions): Promise<string>;
+	    showSaveDialog(options?: Electron.SaveDialogOptions): Promise<eltr.SaveDialogReturnValue>;
 	    /**
 	     * Shows a message dialog.
 	     * @return A promise to resolve to:
 	     * 	`response` is index of the clicked button;
 	     * 	`checkboxChecked` tells whether user selects the checkbox (if visible)
 	     */
-	    showMessageBox(options?: Electron.MessageBoxOptions): Promise<{
-	        response: number;
-	        checkboxChecked: boolean;
-	    }>;
-	    /**
-	     * Unmaximizes the window.
-	     */
-	    unmaximize(): void;
-	    /**
-	     * Sets whether the window should be in fullscreen mode.
-	     */
-	    setFullScreen(flag: boolean): void;
+	    showMessageBox(options?: Electron.MessageBoxOptions): Promise<eltr.MessageBoxReturnValue>;
 	    /**
 	     * Builds and gets absolute path from specified file path.
 	     * @param filePath Relative path to .html file.
@@ -195,7 +252,6 @@ declare module 'electron-base/dist/ElectronWindowBase' {
 
 }
 declare module 'electron-base/dist/MainLogger' {
-	import 'winston-daily-rotate-file';
 	export enum LogLevel {
 	    DEBUG = "debug",
 	    INFO = "info",
@@ -392,7 +448,7 @@ declare module 'electron-base/dist/ElectronAppBase' {
 	    /**
 	     * Executes an OS command.
 	     */
-	    protected execCmd(command: string, options?: any): string;
+	    protected execCmd(command: string, options?: any): any;
 	    /**
 	     * Occurs after application window is focused by user.
 	     */
@@ -443,75 +499,6 @@ declare module 'electron-base/dist/RendererLogger' {
 	    	}
 
 }
-declare module 'electron-base/dist/CommunicationUtil' {
-	/// <reference types="electron" />
-	export abstract class CommunicationUtil {
-	    	    /**
-	     * Calls a method from main app class and waits for response, it will run on main process.
-	     * Can only send and receive serialziable JSON objects.
-	     * @param func Function name.
-	     * @param params List of parameters to send to the remote method.
-	     */
-	    static callAppSync(func: string, ...params: any[]): any;
-	    /**
-	     * Calls a method from window class and waits for response, it will run on main process.
-	     * Can only send and receive serialziable JSON objects.
-	     * @param func Function name.
-	     * @param params List of parameters to send to the remote method.
-	     */
-	    static callWindowSync(func: string, ...params: any[]): any;
-	    /**
-	     * Calls a method from main app class, it will run on main process.
-	     * Can only send and receive serialziable JSON objects.
-	     * @param func Function name.
-	     * @param params List of parameters to send to the remote method.
-	     */
-	    static callApp(func: string, ...params: any[]): Promise<any>;
-	    /**
-	     * Calls a method from window class, it will run on main process.
-	     * Can only send and receive serialziable JSON objects.
-	     * @param func Function name.
-	     * @param params List of parameters to send to the remote method.
-	     */
-	    static callWindow(func: string, ...params: any[]): Promise<any>;
-	    /**
-	     * Calls a method from renderer process, it will run on renderern process.
-	     * Can only send and receive serialziable JSON objects.
-	     * @param browserWindow Function name.
-	     * @param params List of parameters to send to the remote method.
-	     */
-	    static callRenderer(browserWindow: Electron.BrowserWindow, func: string, ...params: any[]): Promise<any>;
-	    /**
-	     * Accepts incoming request to execute functions.
-	     * @param context The object to call functions from.
-	     */
-	    static startRendererCommunication(context: any): void;
-	    /**
-	     * Accepts incoming request to main app class.
-	     * @param context The object to call functions from.
-	     */
-	    static startAppCommunication(context: any): void;
-	    /**
-	     * Accepts incoming request to main app class.
-	     * @param windowName The window name.
-	     * @param context The object to call functions from.
-	     */
-	    static startWindowCommunication(windowName: string, context: any): void;
-	    /**
-	     * Accepts incoming request to execute functions.
-	     * @param id An unique identification string to send ipc message to.
-	     * @param context The object to call functions from.
-	     */
-	    	    /**
-	     * Calls a method from main process, it will run on main process.
-	     * Can only send and receive serialziable JSON objects.
-	     * @param targetId The `id` param when the target calls `startIpcCommunication`.
-	     * @param func Function name.
-	     * @param params List of parameters to send to the remote method.
-	     */
-	    	    	    	}
-
-}
 declare module 'electron-base/dist/RendererUtil' {
 	import { ElectronAppBase } from 'electron-base/dist/ElectronAppBase';
 	import { ElectronWindowBase } from 'electron-base/dist/ElectronWindowBase';
@@ -534,7 +521,7 @@ declare module 'electron-base/dist/RendererUtil' {
 	export const rendererUtil: RendererUtil;
 
 }
-declare module 'electron-base' {
+declare module 'electron-base/dist/index' {
 	export * from 'electron-base/dist/CommunicationUtil';
 	export * from 'electron-base/dist/ElectronAppBase';
 	export { rendererUtil } from 'electron-base/dist/RendererUtil';

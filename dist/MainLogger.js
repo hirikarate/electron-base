@@ -88,9 +88,12 @@ class MainLogger {
                     level: 'debug',
                 }),
                 new DailyRotateFile({
-                    filename: path.join(debugDir, 'debug'),
-                    datePattern: '-yyyy-MM-dd.log',
                     level: 'debug',
+                    filename: path.join(debugDir, 'debug-%DATE%.log'),
+                    datePattern: 'YYYY-MM-DD',
+                    zippedArchive: true,
+                    maxSize: '10m',
+                    maxFiles: '14d',
                 }),
             ],
         });
@@ -104,9 +107,12 @@ class MainLogger {
                     level: 'warn',
                 }),
                 new DailyRotateFile({
-                    filename: path.join(errorDir, 'error'),
-                    datePattern: '-yyyy-MM-dd.log',
+                    filename: path.join(errorDir, 'error-%DATE%.log'),
+                    datePattern: 'YYYY-MM-DD',
                     level: 'warn',
+                    zippedArchive: true,
+                    maxSize: '10m',
+                    maxFiles: '14d',
                 }),
             ],
         });
